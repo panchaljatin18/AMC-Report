@@ -47,8 +47,30 @@ def _cell_fill(cell, color: RGBColor):
     cell.fill.fore_color.rgb = color
 
 
+def _get_safe_logo_path(logo_path: str = None) -> str:
+    """Ensure logo is in a python-pptx compatible format (PNG/JPEG)."""
+    if not logo_path or not os.path.exists(logo_path):
+        # Check standard PNG fallback
+        default_png = os.path.join("frontend", "public", "AMC Logo.png")
+        if os.path.exists(default_png):
+            return default_png
+        return None
+
+    if logo_path.lower().endswith(".webp"):
+        png_path = logo_path[:-5] + ".png"
+        if not os.path.exists(png_path):
+            try:
+                from PIL import Image
+                im = Image.open(logo_path)
+                im.save(png_path, "PNG")
+            except Exception:
+                return None
+        return png_path
+    return logo_path
+
+
 def _add_header(slide, title_text: str, subtitle_text: str, logo_path: str = None):
-    """Full-width dark navy header bar with optional logo."""
+    """Full-width dark navy header bar with optional AMC logo."""
     W = Inches(13.333)
     H = Inches(1.1)
     banner = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
@@ -59,33 +81,31 @@ def _add_header(slide, title_text: str, subtitle_text: str, logo_path: str = Non
 
     tf = banner.text_frame
     tf.word_wrap     = True
-    tf.margin_left   = Inches(0.55)
+    tf.margin_left   = Inches(0.45)
     tf.margin_top    = Inches(0.12)
-    tf.margin_right  = Inches(0.2)
+    tf.margin_right  = Inches(1.2)
 
     p1 = tf.paragraphs[0]
     p1.text = title_text
-    run1 = p1.add_run()
-    run1.font.name  = "Calibri"
-    run1.font.size  = Pt(21)
-    run1.font.bold  = True
-    run1.font.color.rgb = WHITE
-    p1.runs[0].font.name  = "Calibri"
-    p1.runs[0].font.size  = Pt(21)
-    p1.runs[0].font.bold  = True
-    p1.runs[0].font.color.rgb = WHITE
+    if p1.runs:
+        p1.runs[0].font.name  = "Calibri"
+        p1.runs[0].font.size  = Pt(20)
+        p1.runs[0].font.bold  = True
+        p1.runs[0].font.color.rgb = WHITE
 
     p2 = tf.add_paragraph()
     p2.text = subtitle_text
-    p2.runs[0].font.name  = "Calibri"
-    p2.runs[0].font.size  = Pt(10)
-    p2.runs[0].font.color.rgb = RGBColor(148, 163, 184)
+    if p2.runs:
+        p2.runs[0].font.name  = "Calibri"
+        p2.runs[0].font.size  = Pt(10)
+        p2.runs[0].font.color.rgb = RGBColor(148, 163, 184)
 
-    # Optional logo
-    if logo_path and os.path.exists(logo_path):
-        slide.shapes.add_picture(logo_path,
-                                 Inches(12.5), Inches(0.05),
-                                 Inches(0.75), Inches(0.75))
+    # Optional logo safely loaded
+    safe_logo = _get_safe_logo_path(logo_path)
+    if safe_logo and os.path.exists(safe_logo):
+        slide.shapes.add_picture(safe_logo,
+                                 Inches(12.35), Inches(0.12),
+                                 Inches(0.85), Inches(0.85))
 
 
 def _add_kpi_card(slide, left, top, width, height,
