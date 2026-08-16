@@ -20,16 +20,16 @@ export default function Home() {
 
   const handleDownloadPPT = () => {
     if (reportData && reportData.ppt_download_url) {
-      window.open("http://localhost:8000" + reportData.ppt_download_url, "_blank");
+      window.open(reportData.ppt_download_url, "_blank");
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 scaler-container">
       {/* Top Banner / Hero */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-6 rounded-2xl shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-5 sm:p-6 rounded-2xl shadow-xs">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             CCRS Complaints Auto Report Generator
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -38,10 +38,10 @@ export default function Home() {
         </div>
 
         {reportData && (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center">
             <button
               onClick={handleDownloadPPT}
-              className="flex items-center space-x-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 active:scale-98 transition-all"
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download PowerPoint (.pptx)</span>
@@ -65,43 +65,43 @@ export default function Home() {
       {/* Report Preview Tabs */}
       {reportData && (
         <div className="space-y-6 animate-fade-in">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div className="flex items-center space-x-2">
-              <Layers className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-bold text-slate-800">Generated Report Sections</h2>
+              <Layers className="w-5 h-5 text-blue-600 shrink-0" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-800">Generated Report Sections</h2>
             </div>
 
             {/* Tab Buttons */}
-            <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200 space-x-1">
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 overflow-x-auto gap-1 max-w-full">
               <button
                 onClick={() => setActiveTab("road")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === "road"
-                    ? "bg-white text-blue-700 shadow-xs"
+                    ? "bg-white text-blue-700 shadow-xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                1-2. Road Report
+                1-2. Road
               </button>
               <button
                 onClick={() => setActiveTab("drainage")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === "drainage"
-                    ? "bg-white text-blue-700 shadow-xs"
+                    ? "bg-white text-blue-700 shadow-xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                3-4. Drainage Report
+                3-4. Drainage
               </button>
               <button
                 onClick={() => setActiveTab("water")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === "water"
-                    ? "bg-white text-blue-700 shadow-xs"
+                    ? "bg-white text-blue-700 shadow-xs font-extrabold"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                5-6. Water Report
+                5-6. Water
               </button>
             </div>
           </div>

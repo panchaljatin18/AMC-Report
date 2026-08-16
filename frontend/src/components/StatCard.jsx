@@ -16,17 +16,17 @@ export default function StatCard({ title, value, badgeText, badgeColor = "blue",
   };
 
   return (
-    <div className="relative glass-panel rounded-2xl p-5 border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <div className="relative glass-panel rounded-2xl p-4 sm:p-5 border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow">
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentMap[badgeColor] || "bg-blue-600"}`} />
       
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{title}</p>
-          <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{value}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 truncate">{title}</p>
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 truncate">{value}</h3>
         </div>
         {Icon && (
-          <div className={`p-2.5 rounded-xl ${colorMap[badgeColor]}`}>
-            <Icon className="w-5 h-5" />
+          <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${colorMap[badgeColor]}`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         )}
       </div>

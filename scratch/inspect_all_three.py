@@ -8,7 +8,7 @@ for f in sorted(list(upload_dir.glob("*.xlsx"))):
     xl = pd.ExcelFile(f)
     print("Sheets:", xl.sheet_names)
     for sheet in xl.sheet_names:
-        if sheet in ["road 1", "DRAINAGE", "water1", "WATER", "road", "Drainage 1"]:
+        if sheet in ["road", "DRAINAGE", "water", "WATER", "road", "Drainage"]:
             print(f"\n--- Sheet: '{sheet}' ---")
             df = pd.read_excel(f, sheet_name=sheet, header=None)
             for i in range(min(20, len(df))):

@@ -7,7 +7,7 @@ for f in upload_dir.glob("*.xlsx"):
     print("FILE:", f.name)
     xl = pd.ExcelFile(f)
     print("Sheets:", xl.sheet_names)
-    for sheet in ["road 1", "DRAINAGE", "water1"]:
+    for sheet in ["road", "DRAINAGE", "water"]:
         if sheet in xl.sheet_names:
             print(f"\n--- INSPECTING SHEET: '{sheet}' in {f.name} ---")
             df = pd.read_excel(f, sheet_name=sheet, header=None)

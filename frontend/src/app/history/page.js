@@ -13,7 +13,7 @@ export default function HistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:8000/api/reports");
+      const res = await fetch("/api/reports");
       if (!res.ok) throw new Error("Failed to fetch reports history");
       const data = await res.json();
       setReports(data);
@@ -29,7 +29,7 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 scaler-container">
       <div className="flex items-center justify-between bg-white border border-slate-200 p-6 rounded-2xl shadow-xs">
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function HistoryPage() {
                           <span>View</span>
                         </Link>
                         <a
-                          href={`http://localhost:8000${r.ppt_download_url}`}
+                          href={r.ppt_download_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"

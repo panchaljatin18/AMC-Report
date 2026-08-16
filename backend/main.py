@@ -112,13 +112,17 @@ async def generate_report(
     # 5. Build PPT Presentation
     ppt_filename = f"CCRS_CRM_Report_{session_id}.pptx"
     ppt_path = GENERATED_DIR / ppt_filename
+    logo_file = Path(__file__).resolve().parent.parent / "frontend" / "public" / "AMC Logo.webp"
+    logo_str = str(logo_file) if logo_file.exists() else None
+
     build_ppt_presentation(
         road_stats=road_stats,
         drainage_stats=drainage_stats,
         water_stats=water_stats,
         chart_paths=chart_paths,
         date_range=date_range,
-        output_ppt_path=str(ppt_path)
+        output_ppt_path=str(ppt_path),
+        logo_path=logo_str
     )
 
     # 6. Save to Database

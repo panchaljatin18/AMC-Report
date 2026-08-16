@@ -27,15 +27,15 @@ export default function WaterSection({ stats, dateRange }) {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="navy-banner rounded-2xl p-6 text-white shadow-md">
-        <h2 className="text-2xl font-bold tracking-tight">CCRS Water Complaints: Zone & Category Open Summary</h2>
+      <div className="navy-banner rounded-2xl p-4 sm:p-6 text-white shadow-md">
+        <h2 className="text-lg sm:text-2xl font-bold tracking-tight">CCRS Water Complaints: Zone & Category Open Summary</h2>
         <p className="text-xs text-blue-200 mt-1">
           Reporting Period: {dateRange || "August 2026"}
         </p>
       </div>
 
       {/* 4 KPI Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="TOTAL OPEN COMPLAINTS"
           value={stats.total_open}
@@ -67,21 +67,21 @@ export default function WaterSection({ stats, dateRange }) {
       </div>
 
       {/* Recharts Grouped Bar Chart */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">
           Open Complaints Count by Zone & Category
         </h3>
-        <div className="h-80 w-full">
+        <div className="chart-scaler-box min-h-[260px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 15, left: -10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="zone" tick={{ fontSize: 11, fontWeight: 600, fill: "#334155" }} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} />
+              <XAxis dataKey="zone" tick={{ fontSize: 10, fontWeight: 600, fill: "#334155" }} />
+              <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
               <Tooltip contentStyle={{ backgroundColor: "#0F172A", color: "#FFF", borderRadius: 8, fontSize: 12 }} />
               <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} />
               {stats.categories.map((cat, idx) => (
                 <Bar key={cat} dataKey={cat} fill={WATER_COLORS[idx % WATER_COLORS.length]} radius={[3, 3, 0, 0]}>
-                  <LabelList dataKey={cat} position="top" style={{ fontSize: 10, fontWeight: "bold", fill: "#1E293B" }} />
+                  <LabelList dataKey={cat} position="top" style={{ fontSize: 9, fontWeight: "bold", fill: "#1E293B" }} />
                 </Bar>
               ))}
             </BarChart>
@@ -91,12 +91,12 @@ export default function WaterSection({ stats, dateRange }) {
 
       {/* Matrix Data Table */}
       <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="p-4 bg-slate-900 text-white font-bold text-sm flex items-center justify-between">
-          <span>Water Matrix Data Table (Peak values highlighted in light-pink)</span>
-          <span className="text-xs text-rose-300 font-normal">* Peak open category per column</span>
+        <div className="p-3.5 sm:p-4 bg-slate-900 text-white font-bold text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <span>Water Matrix Data Table (Peak values in light-pink)</span>
+          <span className="text-[11px] text-rose-300 font-normal">* Peak open category per column</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-xs text-left min-w-[650px]">
             <thead className="bg-slate-800 text-white uppercase font-semibold">
               <tr>
                 <th className="p-3">Zone Name</th>
@@ -146,9 +146,9 @@ export default function WaterSection({ stats, dateRange }) {
       </div>
 
       {/* Key Insights & Strategic Focus Areas */}
-      <div className="glass-panel rounded-2xl p-6 border-l-4 border-l-indigo-600 border-slate-200 shadow-xs">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-l-indigo-600 border-slate-200 shadow-xs">
         <div className="flex items-center space-x-2 text-indigo-900 font-bold text-sm mb-3">
-          <Lightbulb className="w-5 h-5 text-amber-500" />
+          <Lightbulb className="w-5 h-5 text-amber-500 shrink-0" />
           <h3>KEY INSIGHTS & STRATEGIC FOCUS AREAS</h3>
         </div>
         <ul className="space-y-2 text-xs text-slate-700 font-medium leading-relaxed">

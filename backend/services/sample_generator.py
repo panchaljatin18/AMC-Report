@@ -31,7 +31,7 @@ def generate_sample_excels(output_dir: Path):
     road_df = pd.DataFrame(road_data)
     road_file = output_dir / "Road.xlsx"
     with pd.ExcelWriter(road_file, engine="openpyxl") as writer:
-        road_df.to_excel(writer, sheet_name="road 1", index=False)
+        road_df.to_excel(writer, sheet_name="road", index=False)
 
     # 2. Drainage.xlsx
     drainage_data = [

@@ -1,6 +1,67 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --app-max-width: 100%;
+    --chart-height: 20rem;
+    --table-font: 0.75rem;
+    --kpi-title-font: 0.75rem;
+    --kpi-value-font: 1.875rem;
+  }
+
+  /* 1280px - Standard Laptops & Desktops */
+  @media (min-width: 1280px) {
+    :root {
+      --chart-height: 22rem;
+      --table-font: 0.8125rem;
+      --kpi-title-font: 0.75rem;
+      --kpi-value-font: 2rem;
+    }
+  }
+
+  /* 1680px - High-Res Laptops & 1680p Displays */
+  @media (min-width: 1680px) {
+    :root {
+      --chart-height: 24rem;
+      --table-font: 0.875rem;
+      --kpi-title-font: 0.8125rem;
+      --kpi-value-font: 2.25rem;
+    }
+    .responsive-grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* 1920px - Full HD 1080p Desktop Monitors */
+  @media (min-width: 1920px) {
+    :root {
+      --chart-height: 28rem;
+      --table-font: 0.9375rem;
+      --kpi-title-font: 0.875rem;
+      --kpi-value-font: 2.5rem;
+    }
+    .glass-panel {
+      padding: 1.75rem !important;
+    }
+  }
+
+  /* 2560px - 2K / 4K / Ultrawide Displays */
+  @media (min-width: 2560px) {
+    :root {
+      --chart-height: 32rem;
+      --table-font: 1.05rem;
+      --kpi-title-font: 0.95rem;
+      --kpi-value-font: 3rem;
+    }
+    body {
+      font-size: 1.05rem;
+    }
+    .glass-panel {
+      padding: 2.25rem !important;
+      border-radius: 1.25rem !important;
+    }
+  }
+
   body {
     background-color: #f8fafc;
     color: #0f172a;
@@ -34,4 +95,18 @@
 
 .navy-banner {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+}
+
+/* Scaler Container Utility for Ultra-wide screens */
+.scaler-container {
+  width: 100%;
+  max-width: 2560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive Chart Container Dynamic Height */
+.chart-scaler-box {
+  height: var(--chart-height);
+  width: 100%;
 }

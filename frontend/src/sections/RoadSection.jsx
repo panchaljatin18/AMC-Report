@@ -1,8 +1,9 @@
 "use client";
 
+import { Fragment } from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList } from "recharts";
 import StatCard from "../components/StatCard";
-import { AlertCircle, CheckCircle, Flame } from "lucide-react";
+import { AlertCircle, CheckCircle, Flame, Lightbulb } from "lucide-react";
 
 const COLORS = ["#2563EB", "#EF4444", "#F59E0B", "#10B981"];
 
@@ -21,15 +22,15 @@ export default function RoadSection({ stats, dateRange }) {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="navy-banner rounded-2xl p-6 text-white shadow-md">
-        <h2 className="text-2xl font-bold tracking-tight">Zone wise Road CCRS Complaints Report</h2>
+      <div className="navy-banner rounded-2xl p-4 sm:p-6 text-white shadow-md">
+        <h2 className="text-lg sm:text-2xl font-bold tracking-tight">Zone wise Road CCRS Complaints Report</h2>
         <p className="text-xs text-blue-200 mt-1">
           Open Complaints Breakdown • {dateRange || "Current Reporting Period"}
         </p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <StatCard
           title="TOTAL ROAD COMPLAINTS"
           value={stats.grand_total}
@@ -54,21 +55,21 @@ export default function RoadSection({ stats, dateRange }) {
       </div>
 
       {/* Recharts Grouped Bar Chart */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
-        <h3 className="text-sm font-bold text-slate-800 mb-4">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
+        <h3 className="text-xs sm:text-sm font-bold text-slate-800 mb-4">
           Open Complaints Breakdown by Problem Category across Zones
         </h3>
-        <div className="h-80 w-full">
+        <div className="chart-scaler-box min-h-[260px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+            <BarChart data={chartData} margin={{ top: 20, right: 15, left: -10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="zone" tick={{ fontSize: 12, fontWeight: 600, fill: "#334155" }} />
-              <YAxis tick={{ fontSize: 12, fill: "#64748B" }} />
+              <XAxis dataKey="zone" tick={{ fontSize: 10, fontWeight: 600, fill: "#334155" }} />
+              <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
               <Tooltip contentStyle={{ backgroundColor: "#0F172A", color: "#FFF", borderRadius: 8, fontSize: 12 }} />
-              <Legend wrapperStyle={{ paddingTop: 10, fontSize: 12 }} />
+              <Legend wrapperStyle={{ paddingTop: 10, fontSize: 11 }} />
               {stats.categories.map((cat, idx) => (
                 <Bar key={cat} dataKey={cat} fill={COLORS[idx % COLORS.length]} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey={cat} position="top" style={{ fontSize: 11, fontWeight: "bold", fill: "#1E293B" }} />
+                  <LabelList dataKey={cat} position="top" style={{ fontSize: 10, fontWeight: "bold", fill: "#1E293B" }} />
                 </Bar>
               ))}
             </BarChart>
@@ -78,11 +79,11 @@ export default function RoadSection({ stats, dateRange }) {
 
       {/* Grouped Data Table */}
       <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="p-4 bg-slate-900 text-white font-bold text-sm">
+        <div className="p-3.5 sm:p-4 bg-slate-900 text-white font-bold text-xs sm:text-sm">
           Zone & Category Detailed Data Table
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-xs text-left min-w-[500px]">
             <thead className="bg-slate-800 text-white uppercase font-semibold">
               <tr>
                 <th className="p-3">Zone</th>
@@ -94,7 +95,7 @@ export default function RoadSection({ stats, dateRange }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {stats.zones.map((zData, zIdx) => (
-                <>
+                <Fragment key={zIdx}>
                   {Object.entries(zData.categories).map(([catName, catVals], cIdx) => (
                     <tr key={`${zIdx}-${cIdx}`} className="hover:bg-slate-50/80">
                       <td className="p-3 font-semibold text-slate-800">{cIdx === 0 ? zData.zone : ""}</td>
@@ -107,13 +108,13 @@ export default function RoadSection({ stats, dateRange }) {
                   {/* Subtotal row */}
                   <tr className="bg-slate-100/90 font-bold border-t border-b border-slate-200">
                     <td className="p-3 text-slate-900" colSpan={2}>
-                      {zData.zone} Total Subtotal
+                      {zData.zone} Subtotal
                     </td>
                     <td className="p-3 text-center text-slate-800">{zData.subtotal_closed}</td>
                     <td className="p-3 text-center text-rose-600 font-extrabold">{zData.subtotal_open}</td>
                     <td className="p-3 text-center text-slate-900">{zData.subtotal_grand_total}</td>
                   </tr>
-                </>
+                </Fragment>
               ))}
 
               {/* Grand Total row */}
@@ -129,6 +130,24 @@ export default function RoadSection({ stats, dateRange }) {
           </table>
         </div>
       </div>
+
+      {/* Key Insights Box */}
+      {stats.insights && stats.insights.length > 0 && (
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-l-blue-600 border-slate-200 shadow-xs">
+          <div className="flex items-center space-x-2 text-blue-900 font-bold text-sm mb-3">
+            <Lightbulb className="w-5 h-5 text-amber-500 shrink-0" />
+            <h3>KEY INSIGHTS & EXECUTIVE SUMMARY</h3>
+          </div>
+          <ul className="space-y-2 text-xs text-slate-700 font-medium leading-relaxed">
+            {stats.insights.map((ins, i) => (
+              <li key={i} className="flex items-start space-x-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                <span className="text-blue-600 font-bold">•</span>
+                <span>{ins}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

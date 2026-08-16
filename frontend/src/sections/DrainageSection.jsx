@@ -29,15 +29,15 @@ export default function DrainageSection({ stats, dateRange }) {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="navy-banner rounded-2xl p-6 text-white shadow-md">
-        <h2 className="text-2xl font-bold tracking-tight">CCRS Drainage Complaints Summary Report</h2>
+      <div className="navy-banner rounded-2xl p-4 sm:p-6 text-white shadow-md">
+        <h2 className="text-lg sm:text-2xl font-bold tracking-tight">CCRS Drainage Complaints Summary Report</h2>
         <p className="text-xs text-blue-200 mt-1">
           Comprehensive Zone-Wise Analysis of Open & Pending Complaints | Period: {dateRange || "August 2026"}
         </p>
       </div>
 
       {/* 4 KPI Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="TOTAL COMPLAINTS"
           value={stats.grand_total}
@@ -69,23 +69,23 @@ export default function DrainageSection({ stats, dateRange }) {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Chart 1: Grouped Bar */}
-        <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">
             Open Complaints Category Breakdown by Zone
           </h3>
-          <div className="h-72 w-full">
+          <div className="chart-scaler-box min-h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart1Data} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+              <BarChart data={chart1Data} margin={{ top: 20, right: 15, left: -10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="zone" tick={{ fontSize: 11, fontWeight: 600, fill: "#334155" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748B" }} />
+                <XAxis dataKey="zone" tick={{ fontSize: 10, fontWeight: 600, fill: "#334155" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
                 <Tooltip contentStyle={{ backgroundColor: "#0F172A", color: "#FFF", borderRadius: 8, fontSize: 12 }} />
                 <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} />
                 {stats.categories.map((cat, idx) => (
                   <Bar key={cat} dataKey={cat} fill={CAT_COLORS[idx % CAT_COLORS.length]} radius={[3, 3, 0, 0]}>
-                    <LabelList dataKey={cat} position="top" style={{ fontSize: 10, fontWeight: "bold", fill: "#1E293B" }} />
+                    <LabelList dataKey={cat} position="top" style={{ fontSize: 9, fontWeight: "bold", fill: "#1E293B" }} />
                   </Bar>
                 ))}
               </BarChart>
@@ -94,19 +94,19 @@ export default function DrainageSection({ stats, dateRange }) {
         </div>
 
         {/* Chart 2: Single Bar Volume */}
-        <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4">
             Total Open Complaints Volume by Zone
           </h3>
-          <div className="h-72 w-full">
+          <div className="chart-scaler-box min-h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart2Data} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+              <BarChart data={chart2Data} margin={{ top: 20, right: 15, left: -10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="zone" tick={{ fontSize: 11, fontWeight: 600, fill: "#334155" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748B" }} />
+                <XAxis dataKey="zone" tick={{ fontSize: 10, fontWeight: 600, fill: "#334155" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
                 <Tooltip contentStyle={{ backgroundColor: "#0F172A", color: "#FFF", borderRadius: 8, fontSize: 12 }} />
                 <Bar dataKey="total_open" fill="#1E3A8A" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="total_open" position="top" style={{ fontSize: 11, fontWeight: "bold", fill: "#1E3A8A" }} />
+                  <LabelList dataKey="total_open" position="top" style={{ fontSize: 10, fontWeight: "bold", fill: "#1E3A8A" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -116,11 +116,11 @@ export default function DrainageSection({ stats, dateRange }) {
 
       {/* Detailed Data Table */}
       <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <div className="p-4 bg-slate-900 text-white font-bold text-sm">
+        <div className="p-3.5 sm:p-4 bg-slate-900 text-white font-bold text-xs sm:text-sm">
           Drainage Detailed Data Table (Sorted Descending by Total Open)
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-xs text-left min-w-[600px]">
             <thead className="bg-slate-800 text-white uppercase font-semibold">
               <tr>
                 <th className="p-3">Zone</th>
@@ -170,9 +170,9 @@ export default function DrainageSection({ stats, dateRange }) {
       </div>
 
       {/* Key Insights & Executive Summary */}
-      <div className="glass-panel rounded-2xl p-6 border-l-4 border-l-blue-600 border-slate-200 shadow-xs">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 border-l-4 border-l-blue-600 border-slate-200 shadow-xs">
         <div className="flex items-center space-x-2 text-blue-900 font-bold text-sm mb-3">
-          <Lightbulb className="w-5 h-5 text-amber-500" />
+          <Lightbulb className="w-5 h-5 text-amber-500 shrink-0" />
           <h3>KEY INSIGHTS & EXECUTIVE SUMMARY</h3>
         </div>
         <ul className="space-y-2 text-xs text-slate-700 font-medium leading-relaxed">

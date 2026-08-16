@@ -58,6 +58,44 @@ def compute_road_stats(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     pct_open_total = round((total_open / grand_total * 100), 2) if grand_total > 0 else 0.0
     resolution_rate_total = round((total_closed / grand_total * 100), 2) if grand_total > 0 else 0.0
 
+    # ── Auto-generated Road Insights ──────────────────────────────────────────
+    road_insights = []
+
+    # 1. Overall status
+    road_insights.append(
+        f"Overall Road Status: {grand_total} total complaints registered — {total_closed} resolved ({resolution_rate_total}% resolution rate) "
+        f"and {total_open} open ({pct_open_total}% pending field maintenance action."
+    )
+
+    # 2. Top 3 zones by open count
+    sorted_by_open = sorted(formatted_zones, key=lambda z: z["subtotal_open"], reverse=True)
+    top3 = sorted_by_open[:3]
+    top3_str = ", ".join([f"{z['zone']} ({z['subtotal_open']})" for z in top3])
+    road_insights.append(
+        f"Zone Backlog Severity: Top 3 zones with highest open road complaints — {top3_str}."
+    )
+
+    # 3. Most critical problem category (by total open across all zones)
+    cat_open_totals = {}
+    for z in formatted_zones:
+        for cat, vals in z["categories"].items():
+            cat_open_totals[cat] = cat_open_totals.get(cat, 0) + vals.get("open", 0)
+    if cat_open_totals:
+        top_cat, top_cat_val = max(cat_open_totals.items(), key=lambda x: x[1])
+        top_cat_pct = round((top_cat_val / total_open * 100), 2) if total_open > 0 else 0
+        road_insights.append(
+            f"Critical Problem Category: '{top_cat}' is the leading road issue with {top_cat_val} open cases "
+            f"({top_cat_pct}% of total road backlog) — requiring priority material & crew deployment."
+        )
+
+    # 4. Zone with highest pending ratio (% open)
+    if sorted_by_open:
+        worst_ratio_zone = max(formatted_zones, key=lambda z: z["pct_open"])
+        road_insights.append(
+            f"Highest Pending Ratio: Zone '{worst_ratio_zone['zone']}' has {worst_ratio_zone['pct_open']}% of its "
+            f"complaints still open ({worst_ratio_zone['subtotal_open']} cases) — immediate supervisory intervention required."
+        )
+
     return {
         "categories": all_categories,
         "zones": formatted_zones,
@@ -65,7 +103,8 @@ def compute_road_stats(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         "total_open": total_open,
         "grand_total": grand_total,
         "pct_open": pct_open_total,
-        "resolution_rate": resolution_rate_total
+        "resolution_rate": resolution_rate_total,
+        "insights": road_insights
     }
 
 
@@ -242,6 +281,19 @@ def compute_water_stats(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
             peak_c, peak_val = max(cats.items(), key=lambda x: x[1])
             per_zone_challenges.append(f"{z_name}: {peak_c} ({peak_val})")
     insights.append("Zone-Specific Key Challenges: " + "; ".join(per_zone_challenges) + ".")
+
+    # 4. Low-resolution zones needing targeted intervention
+    low_res_zones = sorted(
+        [z for z in zone_rows if z["total_open"] > 0],
+        key=lambda z: z["total_open"], reverse=True
+    )
+    if low_res_zones:
+        worst = low_res_zones[0]
+        worst_pct = round((worst["total_open"] / total_open * 100), 2) if total_open > 0 else 0
+        insights.append(
+            f"Targeted Intervention Required: Zone '{worst['zone']}' alone accounts for {worst['total_open']} open cases "
+            f"({worst_pct}% of citywide water backlog) — dedicated water supply teams and SCADA monitoring recommended."
+        )
 
     return {
         "categories": cat_columns,

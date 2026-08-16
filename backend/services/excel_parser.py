@@ -37,11 +37,11 @@ def _read_sheet_rows_fast(file_path: str, target_sheet_candidates: List[str]):
 
 def parse_road_excel(file_path: str) -> List[Dict[str, Any]]:
     """
-    Parses Road.xlsx sheet 'road 1' or 'road'
+    Parses Road.xlsx sheet 'road' or 'road'
     Supports title banners, merged zone cells, and subtotal rows.
     """
     try:
-        all_rows = _read_sheet_rows_fast(file_path, ["road 1", "road"])
+        all_rows = _read_sheet_rows_fast(file_path, ["road", "road"])
         header_idx = -1
         for r_idx in range(min(15, len(all_rows))):
             row_vals = [str(x).strip().lower() for x in all_rows[r_idx] if x is not None]

@@ -20,7 +20,7 @@ export default function ReportDetailPage({ params }) {
   useEffect(() => {
     async function fetchDetail() {
       try {
-        const res = await fetch(`http://localhost:8000/api/reports/${reportId}`);
+        const res = await fetch(`/api/reports/${reportId}`);
         if (!res.ok) throw new Error("Report not found");
         const data = await res.json();
         setReportData(data);
@@ -54,7 +54,7 @@ export default function ReportDetailPage({ params }) {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 scaler-container">
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-6 rounded-2xl shadow-xs">
         <div className="flex items-center space-x-3">
@@ -75,7 +75,7 @@ export default function ReportDetailPage({ params }) {
         </div>
 
         <a
-          href={`http://localhost:8000${reportData.ppt_download_url}`}
+          href={reportData.ppt_download_url}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all"
