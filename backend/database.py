@@ -2,7 +2,10 @@ import json
 import uuid
 import datetime
 from pathlib import Path
-from backend.config import MONGODB_URL, DATABASE_NAME, JSON_FALLBACK_FILE
+try:
+    from backend.config import MONGODB_URL, DATABASE_NAME, JSON_FALLBACK_FILE
+except ImportError:
+    from config import MONGODB_URL, DATABASE_NAME, JSON_FALLBACK_FILE
 
 try:
     from motor.motor_asyncio import AsyncIOMotorClient

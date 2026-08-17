@@ -7,14 +7,24 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from backend.config import UPLOAD_DIR, GENERATED_DIR
-from backend.database import db_instance
-from backend.services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
-from backend.services.validator import validate_road_data, validate_drainage_data, validate_water_data
-from backend.services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
-from backend.services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
-from backend.services.ppt_generator import build_ppt_presentation
-from backend.services.sample_generator import generate_sample_excels
+try:
+    from backend.config import UPLOAD_DIR, GENERATED_DIR
+    from backend.database import db_instance
+    from backend.services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
+    from backend.services.validator import validate_road_data, validate_drainage_data, validate_water_data
+    from backend.services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
+    from backend.services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
+    from backend.services.ppt_generator import build_ppt_presentation
+    from backend.services.sample_generator import generate_sample_excels
+except ImportError:
+    from config import UPLOAD_DIR, GENERATED_DIR
+    from database import db_instance
+    from services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
+    from services.validator import validate_road_data, validate_drainage_data, validate_water_data
+    from services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
+    from services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
+    from services.ppt_generator import build_ppt_presentation
+    from services.sample_generator import generate_sample_excels
 
 app = FastAPI(title="CCRS CRM API", version="1.0.0")
 

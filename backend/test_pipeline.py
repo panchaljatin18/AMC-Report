@@ -3,12 +3,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import unittest
-from backend.services.sample_generator import generate_sample_excels
-from backend.services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
-from backend.services.validator import validate_road_data, validate_drainage_data, validate_water_data
-from backend.services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
-from backend.services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
-from backend.services.ppt_generator import build_ppt_presentation
+try:
+    from backend.services.sample_generator import generate_sample_excels
+    from backend.services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
+    from backend.services.validator import validate_road_data, validate_drainage_data, validate_water_data
+    from backend.services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
+    from backend.services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
+    from backend.services.ppt_generator import build_ppt_presentation
+except ImportError:
+    from services.sample_generator import generate_sample_excels
+    from services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
+    from services.validator import validate_road_data, validate_drainage_data, validate_water_data
+    from services.calculator import compute_road_stats, compute_drainage_stats, compute_water_stats
+    from services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
+    from services.ppt_generator import build_ppt_presentation
 
 class TestCCRSReportPipeline(unittest.TestCase):
     @classmethod
