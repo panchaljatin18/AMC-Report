@@ -25,7 +25,23 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
-    fetchHistory();
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/reports");
+        if (!res.ok) throw new Error("Failed to fetch reports history");
+        const data = await res.json();
+        if (isMounted) setReports(data);
+      } catch (err) {
+        if (isMounted) setError("Unable to connect to backend server. Make sure FastAPI is running on port 8000.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
