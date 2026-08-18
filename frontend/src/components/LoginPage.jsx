@@ -174,20 +174,15 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me & SSL Badge */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center space-x-2 text-xs sm:text-xs text-slate-600 font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-colors cursor-pointer"
-                />
-                <span>Remember this workstation</span>
-              </label>
+            {/* Ephemeral Session Security Badges */}
+            <div className="flex items-center justify-between pt-0.5 pb-1 text-xs">
+              <div className="flex items-center space-x-1.5 text-slate-500 font-medium text-[11px]">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Auto-logout on tab close</span>
+              </div>
               <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span>SSL Secured</span>
+                <span>SSL Encrypted</span>
               </span>
             </div>
 
