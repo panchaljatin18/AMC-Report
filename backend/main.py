@@ -2,6 +2,7 @@ import os
 import shutil
 import uuid
 import datetime
+import asyncio
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,9 +44,9 @@ def read_root():
 
 
 @app.post("/api/reports/generate-sample-files")
-def create_samples():
+async def create_samples():
     sample_dir = UPLOAD_DIR / "samples"
-    files = generate_sample_excels(sample_dir)
+    files = await asyncio.to_thread(generate_sample_excels, sample_dir)
     return {
         "message": "Sample Excel files generated successfully",
         "files": {k: f"/api/reports/sample-files/{v.name}" for k, v in files.items()}
@@ -60,37 +61,11 @@ def download_sample_file(filename: str):
     return FileResponse(path=file_path, filename=filename)
 
 
-@app.post("/api/reports/generate")
-async def generate_report(
-    road_file: UploadFile = File(...),
-    drainage_file: UploadFile = File(...),
-    water_file: UploadFile = File(...),
-    date_range: str = Form("Current Month")
-):
-    session_id = str(uuid.uuid4())[:8]
-    session_upload_dir = UPLOAD_DIR / session_id
-    session_upload_dir.mkdir(parents=True, exist_ok=True)
-
-    road_path = session_upload_dir / road_file.filename
-    drainage_path = session_upload_dir / drainage_file.filename
-    water_path = session_upload_dir / water_file.filename
-
-    with open(road_path, "wb") as f:
-        shutil.copyfileobj(road_file.file, f)
-    with open(drainage_path, "wb") as f:
-        shutil.copyfileobj(drainage_file.file, f)
-    with open(water_path, "wb") as f:
-        shutil.copyfileobj(water_file.file, f)
-
+def _process_pipeline(road_path, drainage_path, water_path, date_range, session_id, session_upload_dir):
     # 1. Parse Excel Files
-    try:
-        raw_road = parse_road_excel(str(road_path))
-        raw_drainage = parse_drainage_excel(str(drainage_path))
-        raw_water = parse_water_excel(str(water_path))
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected Excel parsing error: {str(e)}")
+    raw_road = parse_road_excel(str(road_path))
+    raw_drainage = parse_drainage_excel(str(drainage_path))
+    raw_water = parse_water_excel(str(water_path))
 
     # 2. Validate Row Math
     v_road = validate_road_data(raw_road)
@@ -104,7 +79,7 @@ async def generate_report(
     drainage_stats = compute_drainage_stats(v_drainage["rows"])
     water_stats = compute_water_stats(v_water["rows"])
 
-    # 4. Generate Matplotlib Charts
+    # 4. Generate Matplotlib Charts (Fast 140 DPI)
     chart_dir = session_upload_dir / "charts"
     chart_dir.mkdir(parents=True, exist_ok=True)
 
@@ -134,6 +109,56 @@ async def generate_report(
         output_ppt_path=str(ppt_path),
         logo_path=logo_str
     )
+
+    return {
+        "road_stats": road_stats,
+        "drainage_stats": drainage_stats,
+        "water_stats": water_stats,
+        "all_warnings": all_warnings,
+        "ppt_filename": ppt_filename
+    }
+
+
+@app.post("/api/reports/generate")
+async def generate_report(
+    road_file: UploadFile = File(...),
+    drainage_file: UploadFile = File(...),
+    water_file: UploadFile = File(...),
+    date_range: str = Form("Current Month")
+):
+    session_id = str(uuid.uuid4())[:8]
+    session_upload_dir = UPLOAD_DIR / session_id
+    session_upload_dir.mkdir(parents=True, exist_ok=True)
+
+    road_path = session_upload_dir / road_file.filename
+    drainage_path = session_upload_dir / drainage_file.filename
+    water_path = session_upload_dir / water_file.filename
+
+    def _save_uploads():
+        with open(road_path, "wb") as f:
+            shutil.copyfileobj(road_file.file, f)
+        with open(drainage_path, "wb") as f:
+            shutil.copyfileobj(drainage_file.file, f)
+        with open(water_path, "wb") as f:
+            shutil.copyfileobj(water_file.file, f)
+
+    await asyncio.to_thread(_save_uploads)
+
+    try:
+        pipeline_res = await asyncio.to_thread(
+            _process_pipeline,
+            road_path, drainage_path, water_path, date_range, session_id, session_upload_dir
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report processing error: {str(e)}")
+
+    road_stats = pipeline_res["road_stats"]
+    drainage_stats = pipeline_res["drainage_stats"]
+    water_stats = pipeline_res["water_stats"]
+    all_warnings = pipeline_res["all_warnings"]
+    ppt_filename = pipeline_res["ppt_filename"]
 
     # 6. Save to Database
     report_record = {

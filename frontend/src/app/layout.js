@@ -1,5 +1,6 @@
 import "./globals.css";
 import AppShell from "../components/AppShell";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
   title: "CCRS CRM - Auto Excel Report System",
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="min-h-screen bg-slate-50 antialiased selection:bg-blue-600 selection:text-white">
         <AppShell>{children}</AppShell>
+        <SpeedInsights />
       </body>
     </html>
   );

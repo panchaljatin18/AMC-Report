@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import DragDropUpload from "../components/DragDropUpload";
 import ValidationAlert from "../components/ValidationAlert";
-import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Wifi, WifiOff } from "lucide-react";
+import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Layers, BarChart3, Presentation, Check } from "lucide-react";
 import { apiUrl, getApiBaseUrl } from "../utils/api";
 
 export default function UploadSection({ onReportGenerated, isProcessing, setIsProcessing }) {
@@ -12,21 +12,13 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
   const [errorMsg, setErrorMsg] = useState(null);
   const [loadingSamples, setLoadingSamples] = useState(false);
   const [currentStep, setCurrentStep] = useState("");
-  const [backendStatus, setBackendStatus] = useState("checking"); // "checking" | "online" | "offline"
+  const [progressPercent, setProgressPercent] = useState(0);
 
+  // Silent pre-warm Render instance in the background on load
   useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        const res = await fetch(apiUrl("/"), { method: "GET", signal: AbortSignal.timeout(8000) });
-        if (res.ok) setBackendStatus("online");
-        else setBackendStatus("offline");
-      } catch {
-        setBackendStatus("offline");
-      }
-    };
-    checkBackend();
-    const interval = setInterval(checkBackend, 15000);
-    return () => clearInterval(interval);
+    try {
+      fetch(apiUrl("/"), { method: "GET", mode: "cors" }).catch(() => {});
+    } catch {}
   }, []);
 
   const handleLoadSampleFiles = async () => {
@@ -71,6 +63,17 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
     setErrorMsg(null);
     setIsProcessing(true);
     setCurrentStep("Uploading datasets & parsing Excel sheets...");
+    setProgressPercent(20);
+
+    const timer1 = setTimeout(() => {
+      setCurrentStep("Validating formulas & calculating zero-mismatch statistics...");
+      setProgressPercent(50);
+    }, 900);
+
+    const timer2 = setTimeout(() => {
+      setCurrentStep("Generating HD charts & assembling PowerPoint presentation...");
+      setProgressPercent(80);
+    }, 2000);
 
     try {
       const formData = new FormData();
@@ -79,21 +82,14 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
       formData.append("water_file", files.water);
       formData.append("date_range", dateRange);
 
-      const stepTimer1 = setTimeout(() => {
-        setCurrentStep("Validating formulas & calculating statistics...");
-      }, 1200);
-
-      const stepTimer2 = setTimeout(() => {
-        setCurrentStep("Generating high-res charts & building PowerPoint...");
-      }, 2500);
-
       const res = await fetch(apiUrl("/api/reports/generate"), {
         method: "POST",
         body: formData,
       });
 
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      setProgressPercent(100);
 
       if (!res.ok) {
         let errorText = "Failed to generate report";
@@ -110,47 +106,22 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
       setCurrentStep("Report & PowerPoint ready!");
       onReportGenerated(data);
     } catch (err) {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       const backendUrl = getApiBaseUrl();
       if (err.message && (err.message.toLowerCase().includes("failed to fetch") || err.message.toLowerCase().includes("networkerror"))) {
-        setErrorMsg(`Cannot connect to backend server at ${backendUrl}. Please ensure the backend is active on Render.`);
+        setErrorMsg(`Cannot connect to backend server at ${backendUrl}. If Render was asleep, please try again in a few seconds.`);
       } else {
         setErrorMsg(err.message || "An unexpected error occurred connecting to the backend server.");
       }
     } finally {
       setIsProcessing(false);
+      setProgressPercent(0);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Backend Status Pill */}
-      <div className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold w-fit transition-all ${
-        backendStatus === "online"
-          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-          : backendStatus === "offline"
-          ? "bg-rose-50 border-rose-200 text-rose-700"
-          : "bg-slate-100 border-slate-200 text-slate-500"
-      }`}>
-        {backendStatus === "online" ? (
-          <>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <Wifi className="w-3.5 h-3.5 shrink-0" />
-            <span>FastAPI Backend Connected — {getApiBaseUrl()}</span>
-          </>
-        ) : backendStatus === "offline" ? (
-          <>
-            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-            <WifiOff className="w-3.5 h-3.5 shrink-0" />
-            <span>Backend Offline / Sleeping — {getApiBaseUrl()}</span>
-          </>
-        ) : (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-            <span>Connecting to backend at {getApiBaseUrl()}...</span>
-          </>
-        )}
-      </div>
-
       <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
@@ -200,18 +171,33 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
 
         <DragDropUpload files={files} setFiles={setFiles} />
 
-        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {isProcessing ? (
-            <div className="flex items-center space-x-3 text-xs text-blue-700 bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-200 animate-pulse w-full sm:w-auto">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
-              <span className="font-semibold">{currentStep || "Processing..."}</span>
+        {isProcessing && (
+          <div className="mt-6 p-4 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-2.5 transition-all">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-blue-900 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+                <span>{currentStep || "Processing report & presentation..."}</span>
+              </span>
+              <span className="font-bold text-blue-700">{progressPercent}%</span>
             </div>
-          ) : (
+            <div className="w-full bg-blue-200/70 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-blue-600 h-full rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {!isProcessing ? (
             <div className="text-xs text-slate-500">
               {files.road && files.drainage && files.water
                 ? "✓ All 3 datasets loaded. Ready to build report & PPT."
                 : "Select or drag & drop Road, Drainage, and Water Excel files."}
             </div>
+          ) : (
+            <div />
           )}
 
           <button
@@ -226,7 +212,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Processing & Building PPT...</span>
+                <span>Building 6-Slide PPT Presentation...</span>
               </>
             ) : (
               <>

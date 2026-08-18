@@ -24,6 +24,8 @@ ENV/
 # ─── Backend runtime artifacts ────────────────────────────────────────────────
 backend/uploads/
 backend/generated_reports/
+backend/reports_db.json
+scratch/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
 node_modules/
