@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Activity, ShieldCheck, Menu, X } from "lucide-react";
+import { Activity, ShieldCheck, Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Header({
   onToggleMobileMenu,
   mobileMenuOpen = false,
 }) {
+  const { user, logout } = useAuth();
+
   return (
     <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md text-white border-b border-zinc-800/80 px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between shadow-xl">
       <div className="flex items-center space-x-3 sm:space-x-3.5">
@@ -53,18 +56,30 @@ export default function Header({
       </div>
 
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Validation Engine Badge */}
-        <div className="hidden lg:flex items-center space-x-2 bg-zinc-900/90 border border-zinc-800 px-3 py-1.5 rounded-lg text-xs">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span className="text-zinc-200">Validation Engine Active</span>
+        {/* Officer Profile Badge */}
+        <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-950/80 to-zinc-900 border border-blue-500/30 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs shadow-inner">
+          <div className="w-6 h-6 rounded-full bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
+            <User className="w-3.5 h-3.5" />
+          </div>
+          <div className="hidden sm:block text-left">
+            <div className="text-[11px] font-bold text-white leading-tight">
+              {user?.name || "Jatin Panchal"}
+            </div>
+            <div className="text-[9px] text-blue-400 font-medium leading-tight">
+              Admin • AMC CCRS
+            </div>
+          </div>
         </div>
 
-        {/* Backend Status Indicator */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2 bg-zinc-900/90 border border-zinc-800 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs">
-          <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 animate-pulse" />
-          <span className="text-zinc-200 hidden sm:inline">FastAPI Backend Ready</span>
-          <span className="text-zinc-200 sm:hidden">API Ready</span>
-        </div>
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          title="Sign Out of CCRS Command Center"
+          className="flex items-center space-x-1 sm:space-x-1.5 bg-rose-950/50 hover:bg-rose-900/80 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-xs"
+        >
+          <LogOut className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden md:inline">Logout</span>
+        </button>
       </div>
     </header>
   );

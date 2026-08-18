@@ -31,6 +31,7 @@ try:
         generate_rate_limiter,
         api_rate_limiter,
     )
+    from backend.services.auth import verify_credentials, generate_session_token, verify_session_token
 except ImportError:
     from config import UPLOAD_DIR, GENERATED_DIR, ALLOWED_ORIGINS, MAX_UPLOAD_SIZE_BYTES
     from database import db_instance
@@ -49,6 +50,7 @@ except ImportError:
         generate_rate_limiter,
         api_rate_limiter,
     )
+    from services.auth import verify_credentials, generate_session_token, verify_session_token
 
 app = FastAPI(
     title="CCRS CRM API",
@@ -84,6 +86,61 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "CCRS CRM API is active", "version": "1.0.0"}
+
+
+# ─── AUTHENTICATION ENDPOINTS ──────────────────────────────────────────────────
+
+@app.post("/api/auth/login")
+async def login(request: Request):
+    check_rate_limit(request, api_rate_limiter)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+
+    username = str(body.get("username", "")).strip()
+    password = str(body.get("password", "")).strip()
+
+    if not verify_credentials(username, password):
+        logger.warning(f"Failed login attempt for username: {username}")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Username or Password. Please verify your credentials."
+        )
+
+    token = generate_session_token(username)
+    logger.info(f"Successful login for user: {username}")
+    return {
+        "success": True,
+        "token": token,
+        "user": {
+            "name": "Jatin Panchal",
+            "username": "Jatin Panchal",
+            "role": "Chief System Administrator",
+            "department": "AMC CCRS Command & Control",
+            "authenticated": True
+        }
+    }
+
+
+@app.get("/api/auth/me")
+async def get_current_user(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    elif "X-Auth-Token" in request.headers:
+        token = request.headers["X-Auth-Token"].strip()
+
+    user = verify_session_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Session expired or invalid token.")
+    return user
+
+
+@app.post("/api/auth/logout")
+def logout():
+    return {"success": True, "message": "Logged out successfully."}
 
 
 @app.post("/api/reports/generate-sample-files", dependencies=[Depends(verify_api_key)])
