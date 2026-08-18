@@ -31,7 +31,7 @@ try:
         generate_rate_limiter,
         api_rate_limiter,
     )
-    from backend.services.auth import verify_credentials, generate_session_token, verify_session_token
+    from backend.services.auth import generate_session_token, verify_session_token
 except ImportError:
     from config import UPLOAD_DIR, GENERATED_DIR, ALLOWED_ORIGINS, MAX_UPLOAD_SIZE_BYTES
     from database import db_instance
@@ -50,7 +50,7 @@ except ImportError:
         generate_rate_limiter,
         api_rate_limiter,
     )
-    from services.auth import verify_credentials, generate_session_token, verify_session_token
+    from services.auth import generate_session_token, verify_session_token
 
 app = FastAPI(
     title="CCRS CRM API",
@@ -83,6 +83,11 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    await db_instance.init_default_user()
+
+
 @app.get("/")
 def read_root():
     return {"message": "CCRS CRM API is active", "version": "1.0.0"}
@@ -101,23 +106,26 @@ async def login(request: Request):
     username = str(body.get("username", "")).strip()
     password = str(body.get("password", "")).strip()
 
-    if not verify_credentials(username, password):
-        logger.warning(f"Failed login attempt for username: {username}")
+    # Authenticate directly against database record
+    is_valid, user_record = await db_instance.authenticate_user(username, password)
+    if not is_valid or not user_record:
+        logger.warning(f"Failed database login attempt for username: {username}")
         raise HTTPException(
             status_code=401,
             detail="Invalid Username or Password. Please verify your credentials."
         )
 
-    token = generate_session_token(username)
-    logger.info(f"Successful login for user: {username}")
+    user_name = user_record.get("name", "Jatin Panchal")
+    token = generate_session_token(user_name)
+    logger.info(f"Successful database login for user: {user_name}")
     return {
         "success": True,
         "token": token,
         "user": {
-            "name": "Jatin Panchal",
-            "username": "Jatin Panchal",
-            "role": "Chief System Administrator",
-            "department": "AMC CCRS Command & Control",
+            "name": user_name,
+            "username": user_record.get("username", "Jatin Panchal"),
+            "role": user_record.get("role", "Chief System Administrator"),
+            "department": user_record.get("department", "AMC CCRS Command & Control"),
             "authenticated": True
         }
     }

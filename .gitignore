@@ -27,6 +27,7 @@ ENV/
 backend/uploads/
 backend/generated_reports/
 backend/reports_db.json
+backend/users_db.json
 scratch/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
