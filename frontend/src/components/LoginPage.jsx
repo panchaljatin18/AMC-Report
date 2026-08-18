@@ -152,7 +152,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter Password (Jatin@1234)"
+                  placeholder="Enter Password"
                   autoComplete="current-password"
                   autoFocus
                   required
