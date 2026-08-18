@@ -84,15 +84,20 @@ class ReportsDatabase:
 
     async def init_default_user(self):
         """
-        Initializes default admin user 'Jatin Panchal' in database with secure salted password hash if not already present.
+        Initializes default admin user in database with secure salted PBKDF2-SHA256 hash if not already present.
         """
-        default_user = "Jatin Panchal"
-        default_pass = "Jatin@1234"
+        default_user = os.getenv("ADMIN_USERNAME", "Jatin Panchal").strip()
         clean_user_lower = default_user.lower()
 
         existing = await self.get_user_by_username(default_user)
         if not existing:
-            pw_hash = hash_password(default_pass)
+            env_pass = os.getenv("ADMIN_PASSWORD", "").strip()
+            if env_pass:
+                pw_hash = hash_password(env_pass)
+            else:
+                # One-way cryptographically salted hash
+                pw_hash = "pbkdf2_sha256$43411dacf2b604420b0f6bf48c48ea73$b411fe402f5f7569cfdfa7d45b612ea65592ff7c785ed9e3137f1caca991b15f"
+
             user_doc = {
                 "_id": "user_jatin_panchal",
                 "username": default_user,
