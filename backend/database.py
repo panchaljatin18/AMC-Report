@@ -1,8 +1,17 @@
+import sys
 import json
 import uuid
 import datetime
 import logging
 from pathlib import Path
+
+# Add directory to sys.path for robust IDE linter and runtime resolution
+_backend_dir = Path(__file__).resolve().parent
+_root_dir = _backend_dir.parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+if str(_root_dir) not in sys.path:
+    sys.path.insert(0, str(_root_dir))
 
 try:
     from backend.config import MONGODB_URL, DATABASE_NAME, JSON_FALLBACK_FILE, BASE_DIR
