@@ -96,44 +96,58 @@ export function AuthProvider({ children }) {
       throw new Error("Please enter your password.");
     }
 
-    try {
-      const res = await fetch(apiUrl("/api/auth/login"), {
-        method: "POST",
-        headers: getApiHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const authToken = data.token;
-        const authUser = data.user;
-
-        if (authToken && authUser) {
-          setToken(authToken);
-          setUser(authUser);
-          sessionStorage.setItem(STORAGE_TOKEN_KEY, authToken);
-          sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(authUser));
-          return { success: true, token: authToken, user: authUser };
-        }
-      }
-
-      let msg = "Invalid Username or Password. Please verify your credentials.";
-      try {
-        const errData = await res.json();
-        if (errData && errData.detail && errData.detail !== "Not Found") {
-          msg = errData.detail;
-        }
-      } catch { }
-      if (res.status === 404) {
-        msg = "Authentication service unavailable (404). Please ensure backend is running.";
-      }
-      throw new Error(msg);
-    } catch (err) {
-      if (err.message && (err.message.toLowerCase().includes("failed to fetch") || err.message.toLowerCase().includes("networkerror"))) {
-        throw new Error("Cannot connect to backend server. Please ensure backend is running on port 8000.");
-      }
-      throw err;
+    const primaryUrl = apiUrl("/api/auth/login");
+    const fallbackUrl = "https://amc-report.onrender.com/api/auth/login";
+    const targetUrls = [primaryUrl];
+    if (primaryUrl !== fallbackUrl) {
+      targetUrls.push(fallbackUrl);
     }
+
+    let lastError = null;
+    for (const url of targetUrls) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: getApiHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const authToken = data.token;
+          const authUser = data.user;
+
+          if (authToken && authUser) {
+            setToken(authToken);
+            setUser(authUser);
+            sessionStorage.setItem(STORAGE_TOKEN_KEY, authToken);
+            sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(authUser));
+            return { success: true, token: authToken, user: authUser };
+          }
+        }
+
+        let msg = "Invalid Username or Password. Please verify your credentials.";
+        try {
+          const errData = await res.json();
+          if (errData && errData.detail && errData.detail !== "Not Found") {
+            msg = errData.detail;
+          }
+        } catch { }
+        if (res.status === 404) {
+          msg = "Authentication service unavailable (404). Please ensure backend is running.";
+          lastError = new Error(msg);
+          continue;
+        }
+        throw new Error(msg);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (lastError && lastError.message && (lastError.message.toLowerCase().includes("failed to fetch") || lastError.message.toLowerCase().includes("networkerror"))) {
+      throw new Error("Cannot connect to backend server. Please ensure backend is running.");
+    }
+    throw lastError || new Error("Authentication failed.");
   };
 
   return (
