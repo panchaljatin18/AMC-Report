@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import uuid
@@ -92,11 +93,11 @@ class ReportsDatabase:
         existing = await self.get_user_by_username(default_user)
         if not existing:
             env_pass = os.getenv("ADMIN_PASSWORD", "").strip()
-            if env_pass:
-                pw_hash = hash_password(env_pass)
-            else:
-                # One-way cryptographically salted hash
-                pw_hash = "pbkdf2_sha256$43411dacf2b604420b0f6bf48c48ea73$b411fe402f5f7569cfdfa7d45b612ea65592ff7c785ed9e3137f1caca991b15f"
+            if not env_pass:
+                logger.info("No user found in database and ADMIN_PASSWORD not set. Skipping automatic user seeding.")
+                return
+
+            pw_hash = hash_password(env_pass)
 
             user_doc = {
                 "_id": "user_jatin_panchal",
@@ -143,21 +144,40 @@ class ReportsDatabase:
         users = self._read_users_fallback()
         for u in users:
             if u.get("username_lower") == clean_user_lower or u.get("username", "").strip().lower() == clean_user_lower:
+                if self.use_mongo and self.db is not None:
+                    try:
+                        await self.db.users.update_one(
+                            {"username_lower": clean_user_lower},
+                            {"$set": u},
+                            upsert=True
+                        )
+                    except Exception:
+                        pass
                 return u
         return None
 
     async def authenticate_user(self, username: str, password: str) -> tuple[bool, dict | None]:
         user = await self.get_user_by_username(username)
         if not user:
-            # Auto-seed default user if database hasn't been initialized yet
             await self.init_default_user()
             user = await self.get_user_by_username(username)
 
-        if not user:
-            return False, None
-        stored_hash = user.get("password_hash", "")
-        if verify_password_hash(password, stored_hash):
-            return True, user
+        clean_pass = (password or "").strip()
+
+        if user:
+            stored_hash = user.get("password_hash", "")
+            if verify_password_hash(clean_pass, stored_hash):
+                return True, user
+
+        # Fallback check against users_db.json if MongoDB record had an older/mismatched hash
+        fallback_users = self._read_users_fallback()
+        clean_user_lower = (username or "").strip().lower()
+        for fuser in fallback_users:
+            if fuser.get("username_lower") == clean_user_lower or fuser.get("username", "").strip().lower() == clean_user_lower:
+                f_hash = fuser.get("password_hash", "")
+                if verify_password_hash(clean_pass, f_hash):
+                    return True, fuser
+
         return False, None
 
     async def save_report(self, report_data: dict) -> str:

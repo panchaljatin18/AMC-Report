@@ -171,6 +171,7 @@ async def create_samples(request: Request):
     }
 
 
+
 @app.get("/api/reports/sample-files/{filename}", dependencies=[Depends(verify_api_key)])
 def download_sample_file(filename: str, request: Request):
     check_rate_limit(request, api_rate_limiter)
@@ -179,6 +180,10 @@ def download_sample_file(filename: str, request: Request):
         file_path = safe_resolve_path(sample_dir, filename)
     except HTTPException:
         raise HTTPException(status_code=400, detail="Invalid file request.")
+
+    if not file_path.exists() or not file_path.is_file():
+        sample_dir.mkdir(parents=True, exist_ok=True)
+        generate_sample_excels(sample_dir)
 
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Sample file not found.")
@@ -399,7 +404,7 @@ async def download_report_ppt(report_id: str, request: Request):
 
     ppt_filename = report.get("ppt_filename")
     if not ppt_filename:
-        raise HTTPException(status_code=404, detail="Presentation record not found.")
+        ppt_filename = f"CCRS_CRM_Report_{clean_id[:8]}.pptx"
 
     try:
         file_path = safe_resolve_path(GENERATED_DIR, ppt_filename)
@@ -407,7 +412,43 @@ async def download_report_ppt(report_id: str, request: Request):
         raise HTTPException(status_code=400, detail="Invalid presentation request.")
 
     if not file_path.exists() or not file_path.is_file():
-        raise HTTPException(status_code=404, detail="Presentation file not found on server.")
+        # Auto-regenerate presentation on demand if server disk was wiped or restarted
+        try:
+            temp_dir = UPLOAD_DIR / f"temp_{clean_id[:8]}"
+            chart_dir = temp_dir / "charts"
+            chart_dir.mkdir(parents=True, exist_ok=True)
+
+            road_stats = report.get("road_stats", {})
+            drainage_stats = report.get("drainage_stats", {})
+            water_stats = report.get("water_stats", {})
+
+            road_chart_path = generate_road_chart(road_stats, str(chart_dir / "road_chart.png"))
+            drainage_charts = generate_drainage_charts(drainage_stats, str(chart_dir))
+            water_chart_path = generate_water_chart(water_stats, str(chart_dir / "water_chart.png"))
+
+            chart_paths = {
+                "road_chart": road_chart_path,
+                "drainage_cat": drainage_charts["cat_breakdown"],
+                "drainage_total": drainage_charts["total_volume"],
+                "water_chart": water_chart_path
+            }
+
+            logo_file = Path(__file__).resolve().parent.parent / "frontend" / "public" / "AMC Logo.webp"
+            logo_str = str(logo_file) if logo_file.exists() else None
+
+            build_ppt_presentation(
+                road_stats=road_stats,
+                drainage_stats=drainage_stats,
+                water_stats=water_stats,
+                chart_paths=chart_paths,
+                date_range=report.get("date_range", "Current Month"),
+                output_ppt_path=str(file_path),
+                logo_path=logo_str
+            )
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception as e:
+            logger.error(f"Failed to auto-regenerate missing PPT presentation: {e}")
+            raise HTTPException(status_code=404, detail="Presentation file not found on server.")
 
     return FileResponse(
         path=file_path,
