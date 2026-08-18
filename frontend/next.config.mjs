@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "https://amc-report.onrender.com").replace(/\/$/, "");
 
 const nextConfig = {
   reactCompiler: true,

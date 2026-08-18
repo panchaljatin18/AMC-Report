@@ -7,7 +7,7 @@ export function getApiBaseUrl() {
   if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
     return "http://localhost:8000";
   }
-  return "";
+  return "https://amc-report.onrender.com";
 }
 
 export function apiUrl(path) {
