@@ -18,8 +18,10 @@ ENV/
 
 # ─── Environment / Secrets ────────────────────────────────────────────────────
 .env
+.env.local
 .env.*
 !.env.example
+!**/.env.example
 
 # ─── Backend runtime artifacts ────────────────────────────────────────────────
 backend/uploads/

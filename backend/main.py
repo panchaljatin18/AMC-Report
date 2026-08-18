@@ -3,13 +3,18 @@ import shutil
 import uuid
 import datetime
 import asyncio
+import logging
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+
+logger = logging.getLogger("api")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 try:
-    from backend.config import UPLOAD_DIR, GENERATED_DIR
+    from backend.config import UPLOAD_DIR, GENERATED_DIR, ALLOWED_ORIGINS, MAX_UPLOAD_SIZE_BYTES
     from backend.database import db_instance
     from backend.services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
     from backend.services.validator import validate_road_data, validate_drainage_data, validate_water_data
@@ -17,8 +22,17 @@ try:
     from backend.services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
     from backend.services.ppt_generator import build_ppt_presentation
     from backend.services.sample_generator import generate_sample_excels
+    from backend.services.security import (
+        verify_api_key,
+        safe_resolve_path,
+        validate_resource_id,
+        validate_uploaded_excel,
+        check_rate_limit,
+        generate_rate_limiter,
+        api_rate_limiter,
+    )
 except ImportError:
-    from config import UPLOAD_DIR, GENERATED_DIR
+    from config import UPLOAD_DIR, GENERATED_DIR, ALLOWED_ORIGINS, MAX_UPLOAD_SIZE_BYTES
     from database import db_instance
     from services.excel_parser import parse_road_excel, parse_drainage_excel, parse_water_excel
     from services.validator import validate_road_data, validate_drainage_data, validate_water_data
@@ -26,15 +40,44 @@ except ImportError:
     from services.chart_generator import generate_road_chart, generate_drainage_charts, generate_water_chart
     from services.ppt_generator import build_ppt_presentation
     from services.sample_generator import generate_sample_excels
+    from services.security import (
+        verify_api_key,
+        safe_resolve_path,
+        validate_resource_id,
+        validate_uploaded_excel,
+        check_rate_limit,
+        generate_rate_limiter,
+        api_rate_limiter,
+    )
 
-app = FastAPI(title="CCRS CRM API", version="1.0.0")
+app = FastAPI(
+    title="CCRS CRM API",
+    version="1.0.0",
+    docs_url=None,  # Disabled in production to prevent schema/endpoint enumeration
+    redoc_url=None,
+)
 
+# 1. Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 2. Strict CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key", "Authorization", "Accept"],
+    max_age=600,
 )
 
 
@@ -43,8 +86,9 @@ def read_root():
     return {"message": "CCRS CRM API is active", "version": "1.0.0"}
 
 
-@app.post("/api/reports/generate-sample-files")
-async def create_samples():
+@app.post("/api/reports/generate-sample-files", dependencies=[Depends(verify_api_key)])
+async def create_samples(request: Request):
+    check_rate_limit(request, api_rate_limiter)
     sample_dir = UPLOAD_DIR / "samples"
     files = await asyncio.to_thread(generate_sample_excels, sample_dir)
     return {
@@ -53,12 +97,23 @@ async def create_samples():
     }
 
 
-@app.get("/api/reports/sample-files/{filename}")
-def download_sample_file(filename: str):
-    file_path = UPLOAD_DIR / "samples" / filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="Sample file not found")
-    return FileResponse(path=file_path, filename=filename)
+@app.get("/api/reports/sample-files/{filename}", dependencies=[Depends(verify_api_key)])
+def download_sample_file(filename: str, request: Request):
+    check_rate_limit(request, api_rate_limiter)
+    sample_dir = UPLOAD_DIR / "samples"
+    try:
+        file_path = safe_resolve_path(sample_dir, filename)
+    except HTTPException:
+        raise HTTPException(status_code=400, detail="Invalid file request.")
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Sample file not found.")
+
+    return FileResponse(
+        path=file_path,
+        filename=os.path.basename(filename),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 def _process_pipeline(road_path, drainage_path, water_path, date_range, session_id, session_upload_dir):
@@ -119,40 +174,78 @@ def _process_pipeline(road_path, drainage_path, water_path, date_range, session_
     }
 
 
-@app.post("/api/reports/generate")
+async def _save_upload_file_safe(upload_file: UploadFile, dest_path: Path, max_bytes: int):
+    """
+    Streams upload file in chunks and enforces max_bytes limit to prevent memory exhaustion DoS.
+    """
+    bytes_read = 0
+    with open(dest_path, "wb") as f:
+        while True:
+            chunk = await upload_file.read(64 * 1024)
+            if not chunk:
+                break
+            bytes_read += len(chunk)
+            if bytes_read > max_bytes:
+                dest_path.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Uploaded file exceeds maximum allowed size of {max_bytes // (1024 * 1024)} MB."
+                )
+            f.write(chunk)
+
+
+@app.post("/api/reports/generate", dependencies=[Depends(verify_api_key)])
 async def generate_report(
+    request: Request,
     road_file: UploadFile = File(...),
     drainage_file: UploadFile = File(...),
     water_file: UploadFile = File(...),
     date_range: str = Form("Current Month")
 ):
-    session_id = str(uuid.uuid4())[:8]
+    # Enforce Rate Limiting on heavy report generation
+    check_rate_limit(request, generate_rate_limiter)
+
+    # Validate file extensions and magic headers
+    await validate_uploaded_excel(road_file, road_file.filename)
+    await validate_uploaded_excel(drainage_file, drainage_file.filename)
+    await validate_uploaded_excel(water_file, water_file.filename)
+
+    # Sanitize date_range parameter
+    clean_date_range = "".join(c for c in date_range if c.isalnum() or c in " :-_.,/").strip()[:100] or "Current Month"
+
+    session_id = uuid.uuid4().hex[:12]
     session_upload_dir = UPLOAD_DIR / session_id
     session_upload_dir.mkdir(parents=True, exist_ok=True)
 
-    road_path = session_upload_dir / road_file.filename
-    drainage_path = session_upload_dir / drainage_file.filename
-    water_path = session_upload_dir / water_file.filename
+    # Use safe server-generated filenames to prevent arbitrary file writes/traversal
+    road_path = session_upload_dir / "road_input.xlsx"
+    drainage_path = session_upload_dir / "drainage_input.xlsx"
+    water_path = session_upload_dir / "water_input.xlsx"
 
-    def _save_uploads():
-        with open(road_path, "wb") as f:
-            shutil.copyfileobj(road_file.file, f)
-        with open(drainage_path, "wb") as f:
-            shutil.copyfileobj(drainage_file.file, f)
-        with open(water_path, "wb") as f:
-            shutil.copyfileobj(water_file.file, f)
-
-    await asyncio.to_thread(_save_uploads)
+    try:
+        await _save_upload_file_safe(road_file, road_path, MAX_UPLOAD_SIZE_BYTES)
+        await _save_upload_file_safe(drainage_file, drainage_path, MAX_UPLOAD_SIZE_BYTES)
+        await _save_upload_file_safe(water_file, water_path, MAX_UPLOAD_SIZE_BYTES)
+    except HTTPException:
+        shutil.rmtree(session_upload_dir, ignore_errors=True)
+        raise
+    except Exception as e:
+        shutil.rmtree(session_upload_dir, ignore_errors=True)
+        logger.error(f"Error saving upload files: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save uploaded files securely.")
 
     try:
         pipeline_res = await asyncio.to_thread(
             _process_pipeline,
-            road_path, drainage_path, water_path, date_range, session_id, session_upload_dir
+            road_path, drainage_path, water_path, clean_date_range, session_id, session_upload_dir
         )
     except ValueError as ve:
+        shutil.rmtree(session_upload_dir, ignore_errors=True)
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Report processing error: {str(e)}")
+        shutil.rmtree(session_upload_dir, ignore_errors=True)
+        logger.error(f"Report generation processing error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An error occurred while processing the report. Please verify your Excel format.")
 
     road_stats = pipeline_res["road_stats"]
     drainage_stats = pipeline_res["drainage_stats"]
@@ -163,11 +256,11 @@ async def generate_report(
     # 6. Save to Database
     report_record = {
         "created_at": datetime.datetime.utcnow().isoformat(),
-        "date_range": date_range,
+        "date_range": clean_date_range,
         "uploaded_filenames": {
-            "road": road_file.filename,
-            "drainage": drainage_file.filename,
-            "water": water_file.filename
+            "road": os.path.basename(road_file.filename)[:100],
+            "drainage": os.path.basename(drainage_file.filename)[:100],
+            "water": os.path.basename(water_file.filename)[:100]
         },
         "road_stats": road_stats,
         "drainage_stats": drainage_stats,
@@ -181,7 +274,7 @@ async def generate_report(
     return {
         "report_id": report_id,
         "message": "Report generated successfully",
-        "date_range": date_range,
+        "date_range": clean_date_range,
         "warnings": all_warnings,
         "road_stats": road_stats,
         "drainage_stats": drainage_stats,
@@ -190,13 +283,15 @@ async def generate_report(
     }
 
 
-@app.get("/api/reports")
-async def get_reports_history():
+@app.get("/api/reports", dependencies=[Depends(verify_api_key)])
+async def get_reports_history(request: Request):
+    check_rate_limit(request, api_rate_limiter)
     reports = await db_instance.list_reports(limit=50)
     summary_list = []
     for r in reports:
+        report_id = r.get("id", str(r.get("_id", "")))
         summary_list.append({
-            "id": r.get("id", str(r.get("_id", ""))),
+            "id": report_id,
             "created_at": r.get("created_at"),
             "date_range": r.get("date_range"),
             "uploaded_filenames": r.get("uploaded_filenames"),
@@ -204,36 +299,44 @@ async def get_reports_history():
             "road_grand_total": r.get("road_stats", {}).get("grand_total", 0),
             "drainage_grand_total": r.get("drainage_stats", {}).get("grand_total", 0),
             "water_total_open": r.get("water_stats", {}).get("total_open", 0),
-            "ppt_download_url": f"/api/reports/{r.get('id', str(r.get('_id', '')))}/download"
+            "ppt_download_url": f"/api/reports/{report_id}/download"
         })
     return summary_list
 
 
-@app.get("/api/reports/{report_id}")
-async def get_report_detail(report_id: str):
-    report = await db_instance.get_report(report_id)
+@app.get("/api/reports/{report_id}", dependencies=[Depends(verify_api_key)])
+async def get_report_detail(report_id: str, request: Request):
+    check_rate_limit(request, api_rate_limiter)
+    clean_id = validate_resource_id(report_id)
+    report = await db_instance.get_report(clean_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
-    report["ppt_download_url"] = f"/api/reports/{report_id}/download"
+        raise HTTPException(status_code=404, detail="Report not found.")
+    report["ppt_download_url"] = f"/api/reports/{clean_id}/download"
     return report
 
 
-@app.get("/api/reports/{report_id}/download")
-async def download_report_ppt(report_id: str):
-    report = await db_instance.get_report(report_id)
+@app.get("/api/reports/{report_id}/download", dependencies=[Depends(verify_api_key)])
+async def download_report_ppt(report_id: str, request: Request):
+    check_rate_limit(request, api_rate_limiter)
+    clean_id = validate_resource_id(report_id)
+    report = await db_instance.get_report(clean_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=404, detail="Report not found.")
 
     ppt_filename = report.get("ppt_filename")
     if not ppt_filename:
-        raise HTTPException(status_code=404, detail="PPT file record missing")
+        raise HTTPException(status_code=404, detail="Presentation record not found.")
 
-    file_path = GENERATED_DIR / ppt_filename
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="PPT file not found on disk")
+    try:
+        file_path = safe_resolve_path(GENERATED_DIR, ppt_filename)
+    except HTTPException:
+        raise HTTPException(status_code=400, detail="Invalid presentation request.")
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Presentation file not found on server.")
 
     return FileResponse(
         path=file_path,
-        filename=f"CCRS_Complaints_Report_{report_id[:6]}.pptx",
+        filename=f"CCRS_Complaints_Report_{clean_id[:8]}.pptx",
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation"
     )

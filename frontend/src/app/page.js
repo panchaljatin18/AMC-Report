@@ -17,20 +17,6 @@ export default function Home() {
   const handleReportGenerated = (data) => {
     setReportData(data);
     setActiveTab("road");
-
-    if (data && data.ppt_download_url) {
-      try {
-        const fullUrl = apiUrl(data.ppt_download_url);
-        const link = document.createElement("a");
-        link.href = fullUrl;
-        link.download = `CCRS_Report_${data.report_id || "generated"}.pptx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (e) {
-        console.error("Auto-download error:", e);
-      }
-    }
   };
 
   const handleDownloadPPT = () => {

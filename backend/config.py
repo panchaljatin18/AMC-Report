@@ -28,3 +28,18 @@ MONGODB_URL = os.getenv("MONGODB_URL") or os.getenv("MONGO_URI") or "mongodb://l
 DATABASE_NAME = os.getenv("DATABASE_NAME", "ccrs_crm")
 JSON_FALLBACK_FILE = BASE_DIR / "reports_db.json"
 
+# Security & CORS Configuration
+API_SECRET_KEY = os.getenv("API_SECRET_KEY", "").strip()
+MAX_UPLOAD_SIZE_BYTES = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(25 * 1024 * 1024)))  # 25 MB
+
+raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+if raw_origins:
+    ALLOWED_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
+else:
+    ALLOWED_ORIGINS = [
+        "https://amc-report.vercel.app",
+        "https://amc-crm.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+    ]

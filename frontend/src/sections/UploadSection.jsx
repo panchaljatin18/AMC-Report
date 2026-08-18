@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import DragDropUpload from "../components/DragDropUpload";
 import ValidationAlert from "../components/ValidationAlert";
 import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Layers, BarChart3, Presentation, Check } from "lucide-react";
-import { apiUrl, getApiBaseUrl } from "../utils/api";
+import { apiUrl, getApiBaseUrl, getApiHeaders } from "../utils/api";
 
 export default function UploadSection({ onReportGenerated, isProcessing, setIsProcessing }) {
   const [files, setFiles] = useState({ road: null, drainage: null, water: null });
@@ -17,7 +17,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
   // Silent pre-warm Render instance in the background on load
   useEffect(() => {
     try {
-      fetch(apiUrl("/"), { method: "GET", mode: "cors" }).catch(() => {});
+      fetch(apiUrl("/"), { method: "GET", mode: "cors", headers: getApiHeaders() }).catch(() => {});
     } catch {}
   }, []);
 
@@ -27,6 +27,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
     try {
       const res = await fetch(apiUrl("/api/reports/generate-sample-files"), {
         method: "POST",
+        headers: getApiHeaders(),
       });
       if (!res.ok) {
         throw new Error("Failed to generate sample files on backend");
@@ -34,9 +35,9 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
       const data = await res.json();
       
       // Fetch each sample file and convert to File object
-      const roadBlob = await fetch(apiUrl(data.files.road)).then((r) => r.blob());
-      const drainageBlob = await fetch(apiUrl(data.files.drainage)).then((r) => r.blob());
-      const waterBlob = await fetch(apiUrl(data.files.water)).then((r) => r.blob());
+      const roadBlob = await fetch(apiUrl(data.files.road), { headers: getApiHeaders() }).then((r) => r.blob());
+      const drainageBlob = await fetch(apiUrl(data.files.drainage), { headers: getApiHeaders() }).then((r) => r.blob());
+      const waterBlob = await fetch(apiUrl(data.files.water), { headers: getApiHeaders() }).then((r) => r.blob());
 
       const roadFile = new File([roadBlob], "Road_Complaints_Sample.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const drainageFile = new File([drainageBlob], "Drainage_Complaints_Sample.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -58,6 +59,19 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
     if (!files.road || !files.drainage || !files.water) {
       setErrorMsg("Please upload all 3 Excel files (Road, Drainage, Water) before generating.");
       return;
+    }
+
+    // Client-side File Security Validation
+    const maxSizeBytes = 25 * 1024 * 1024;
+    for (const [key, f] of Object.entries(files)) {
+      if (!f.name.toLowerCase().endsWith(".xlsx")) {
+        setErrorMsg(`Invalid file '${f.name}'. Only .xlsx Excel files are permitted.`);
+        return;
+      }
+      if (f.size > maxSizeBytes) {
+        setErrorMsg(`File '${f.name}' is too large (${(f.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is 25 MB.`);
+        return;
+      }
     }
 
     setErrorMsg(null);
@@ -84,6 +98,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
 
       const res = await fetch(apiUrl("/api/reports/generate"), {
         method: "POST",
+        headers: getApiHeaders(),
         body: formData,
       });
 
@@ -217,7 +232,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
             ) : (
               <>
                 <Play className="w-4 h-4 fill-current" />
-                <span>Generate Reports & Download PPT</span>
+                <span>Generate CCRS Report</span>
               </>
             )}
           </button>

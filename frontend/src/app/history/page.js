@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { History, Download, Calendar, FileText, AlertTriangle, Eye, RefreshCw } from "lucide-react";
-import { apiUrl } from "../../utils/api";
+import { apiUrl, getApiHeaders } from "../../utils/api";
 
 export default function HistoryPage() {
   const [reports, setReports] = useState([]);
@@ -14,7 +14,7 @@ export default function HistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl("/api/reports"));
+      const res = await fetch(apiUrl("/api/reports"), { headers: getApiHeaders() });
       if (!res.ok) throw new Error("Failed to fetch reports history");
       const data = await res.json();
       setReports(data);
@@ -29,7 +29,7 @@ export default function HistoryPage() {
     let isMounted = true;
     const load = async () => {
       try {
-        const res = await fetch(apiUrl("/api/reports"));
+        const res = await fetch(apiUrl("/api/reports"), { headers: getApiHeaders() });
         if (!res.ok) throw new Error("Failed to fetch reports history");
         const data = await res.json();
         if (isMounted) setReports(data);
