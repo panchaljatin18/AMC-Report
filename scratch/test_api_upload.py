@@ -35,7 +35,7 @@ body.append(b'')
 payload = b'\r\n'.join(body)
 
 req = urllib.request.Request(
-    'http://localhost:8000/api/reports/generate',
+    'https://amc-report.onrender.com/api/reports/generate',
     data=payload,
     headers={'Content-Type': f'multipart/form-data; boundary={boundary}'}
 )

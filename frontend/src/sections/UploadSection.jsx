@@ -17,7 +17,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const res = await fetch(apiUrl("/"), { method: "GET", signal: AbortSignal.timeout(4000) });
+        const res = await fetch(apiUrl("/"), { method: "GET", signal: AbortSignal.timeout(8000) });
         if (res.ok) setBackendStatus("online");
         else setBackendStatus("offline");
       } catch {
@@ -56,7 +56,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
         water: waterFile,
       });
     } catch (err) {
-      setErrorMsg("Backend server is not reachable on port 8000. Please ensure the Python FastAPI backend is running.");
+      setErrorMsg(`Backend server is not reachable at ${getApiBaseUrl()}. Please ensure the backend is running.`);
     } finally {
       setLoadingSamples(false);
     }
@@ -112,7 +112,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
     } catch (err) {
       const backendUrl = getApiBaseUrl();
       if (err.message && (err.message.toLowerCase().includes("failed to fetch") || err.message.toLowerCase().includes("networkerror"))) {
-        setErrorMsg(`Cannot connect to backend server at ${backendUrl}. Make sure FastAPI is running: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`);
+        setErrorMsg(`Cannot connect to backend server at ${backendUrl}. Please ensure the backend is active on Render.`);
       } else {
         setErrorMsg(err.message || "An unexpected error occurred connecting to the backend server.");
       }
@@ -141,7 +141,7 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
           <>
             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             <WifiOff className="w-3.5 h-3.5 shrink-0" />
-            <span>Backend Offline — Start: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000</span>
+            <span>Backend Offline / Sleeping — {getApiBaseUrl()}</span>
           </>
         ) : (
           <>

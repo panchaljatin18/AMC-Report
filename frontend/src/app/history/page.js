@@ -19,7 +19,7 @@ export default function HistoryPage() {
       const data = await res.json();
       setReports(data);
     } catch (err) {
-      setError("Unable to connect to backend server. Make sure FastAPI is running on port 8000.");
+      setError("Unable to connect to backend server. Please verify the backend service is running.");
     } finally {
       setLoading(false);
     }
@@ -34,7 +34,7 @@ export default function HistoryPage() {
         const data = await res.json();
         if (isMounted) setReports(data);
       } catch (err) {
-        if (isMounted) setError("Unable to connect to backend server. Make sure FastAPI is running on port 8000.");
+        if (isMounted) setError("Unable to connect to backend server. Please verify the backend service is running.");
       } finally {
         if (isMounted) setLoading(false);
       }

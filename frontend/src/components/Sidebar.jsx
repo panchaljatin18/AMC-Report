@@ -41,7 +41,7 @@ export default function Sidebar({
         window.open(apiUrl(data.files.water), "_blank");
       }
     } catch (err) {
-      alert("Please make sure the backend server (FastAPI port 8000) is running!");
+      alert("Unable to generate samples. Please check if backend server is reachable.");
     }
   };
 
