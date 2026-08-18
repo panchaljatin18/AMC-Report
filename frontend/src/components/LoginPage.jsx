@@ -50,7 +50,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-x-hidden bg-gradient-to-br from-slate-950 via-[#0B1528] to-slate-950 p-4 sm:p-6 md:p-8 select-none">
+    <div className="min-h-screen h-screen max-h-screen w-full max-w-full overflow-hidden flex items-center justify-center relative bg-gradient-to-br from-slate-950 via-[#0B1528] to-slate-950 p-3 sm:p-5 select-none">
       {/* Ambient background glow & grid */}
       <div className="absolute top-10 -left-20 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute bottom-10 -right-20 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
@@ -66,33 +66,33 @@ export default function LoginPage() {
       />
 
       {/* Responsive Container Wrapper */}
-      <div className="relative z-10 w-full max-w-[420px] sm:max-w-[450px] md:max-w-[480px] my-auto">
+      <div className="relative z-10 w-full max-w-[410px] sm:max-w-[430px] md:max-w-[450px] my-auto">
         {/* Main Card Container */}
-        <div className="bg-white/98 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-6 sm:p-8 md:p-9 shadow-2xl shadow-black/60 ring-1 ring-slate-900/5">
+        <div className="bg-white/98 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-5 sm:p-7 md:p-8 shadow-2xl shadow-black/60 ring-1 ring-slate-900/5">
           
           {/* Logo & Header */}
-          <div className="text-center space-y-3 mb-6 sm:mb-7">
-            <div className="inline-flex items-center justify-center p-3 sm:p-3.5 rounded-2xl bg-gradient-to-b from-slate-900 to-blue-950 border border-slate-700 shadow-xl shadow-blue-900/20 mb-1 ring-4 ring-blue-500/10">
+          <div className="text-center space-y-2.5 mb-5 sm:mb-6">
+            <div className="inline-flex items-center justify-center p-2.5 sm:p-3 rounded-2xl bg-gradient-to-b from-slate-900 to-blue-950 border border-slate-700 shadow-xl shadow-blue-900/20 ring-4 ring-blue-500/10">
               <Image
                 src="/AMC Logo.webp"
                 alt="AMC Emblem Logo"
-                width={72}
-                height={72}
+                width={64}
+                height={64}
                 priority
                 unoptimized
-                className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 object-contain drop-shadow-md"
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain drop-shadow-md"
               />
             </div>
 
             <div>
-              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[10px] sm:text-[11px] font-bold tracking-wide uppercase mb-2 shadow-2xs">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[10px] sm:text-[11px] font-bold tracking-wide uppercase mb-1.5 shadow-2xs">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span>AMC Officer Command Portal</span>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight">
                 CCRS CRM Command Center
               </h1>
-              <p className="text-xs sm:text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 font-medium leading-relaxed">
                 Automated Municipal Complaints & PowerPoint Analytics Engine
               </p>
             </div>
@@ -100,14 +100,14 @@ export default function LoginPage() {
 
           {/* Error Message Box */}
           {errorMsg && (
-            <div className="mb-5 p-3 sm:p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-xs font-semibold flex items-center space-x-2.5 shadow-2xs animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="mb-4 p-2.5 sm:p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center space-x-2 shadow-2xs animate-in fade-in slide-in-from-top-2 duration-200">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span className="flex-1">{errorMsg}</span>
             </div>
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-4.5">
+          <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
             {/* Username Input */}
             <div className="space-y-1.5 text-left">
               <div className="flex items-center justify-between">
