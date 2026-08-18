@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DragDropUpload from "../components/DragDropUpload";
 import ValidationAlert from "../components/ValidationAlert";
-import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
-import { apiUrl } from "../utils/api";
+import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Wifi, WifiOff } from "lucide-react";
+import { apiUrl, getApiBaseUrl } from "../utils/api";
 
 export default function UploadSection({ onReportGenerated, isProcessing, setIsProcessing }) {
   const [files, setFiles] = useState({ road: null, drainage: null, water: null });
@@ -12,6 +12,22 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
   const [errorMsg, setErrorMsg] = useState(null);
   const [loadingSamples, setLoadingSamples] = useState(false);
   const [currentStep, setCurrentStep] = useState("");
+  const [backendStatus, setBackendStatus] = useState("checking"); // "checking" | "online" | "offline"
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const res = await fetch(apiUrl("/"), { method: "GET", signal: AbortSignal.timeout(4000) });
+        if (res.ok) setBackendStatus("online");
+        else setBackendStatus("offline");
+      } catch {
+        setBackendStatus("offline");
+      }
+    };
+    checkBackend();
+    const interval = setInterval(checkBackend, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLoadSampleFiles = async () => {
     setLoadingSamples(true);
@@ -94,8 +110,9 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
       setCurrentStep("Report & PowerPoint ready!");
       onReportGenerated(data);
     } catch (err) {
-      if (err.message && err.message.toLowerCase().includes("failed to fetch")) {
-        setErrorMsg("Cannot connect to backend server. Please make sure the FastAPI server is running on port 8000 (uvicorn backend.main:app --port 8000).");
+      const backendUrl = getApiBaseUrl();
+      if (err.message && (err.message.toLowerCase().includes("failed to fetch") || err.message.toLowerCase().includes("networkerror"))) {
+        setErrorMsg(`Cannot connect to backend server at ${backendUrl}. Make sure FastAPI is running: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`);
       } else {
         setErrorMsg(err.message || "An unexpected error occurred connecting to the backend server.");
       }
@@ -106,6 +123,34 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
 
   return (
     <div className="space-y-6">
+      {/* Backend Status Pill */}
+      <div className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold w-fit transition-all ${
+        backendStatus === "online"
+          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+          : backendStatus === "offline"
+          ? "bg-rose-50 border-rose-200 text-rose-700"
+          : "bg-slate-100 border-slate-200 text-slate-500"
+      }`}>
+        {backendStatus === "online" ? (
+          <>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <Wifi className="w-3.5 h-3.5 shrink-0" />
+            <span>FastAPI Backend Connected — {getApiBaseUrl()}</span>
+          </>
+        ) : backendStatus === "offline" ? (
+          <>
+            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+            <WifiOff className="w-3.5 h-3.5 shrink-0" />
+            <span>Backend Offline — Start: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000</span>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+            <span>Connecting to backend at {getApiBaseUrl()}...</span>
+          </>
+        )}
+      </div>
+
       <div className="glass-panel rounded-2xl p-6 border border-slate-200 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
