@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { History, Download, Calendar, FileText, AlertTriangle, Eye, RefreshCw } from "lucide-react";
+import { apiUrl } from "../../utils/api";
 
 export default function HistoryPage() {
   const [reports, setReports] = useState([]);
@@ -13,7 +14,7 @@ export default function HistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/reports");
+      const res = await fetch(apiUrl("/api/reports"));
       if (!res.ok) throw new Error("Failed to fetch reports history");
       const data = await res.json();
       setReports(data);
@@ -28,7 +29,7 @@ export default function HistoryPage() {
     let isMounted = true;
     const load = async () => {
       try {
-        const res = await fetch("/api/reports");
+        const res = await fetch(apiUrl("/api/reports"));
         if (!res.ok) throw new Error("Failed to fetch reports history");
         const data = await res.json();
         if (isMounted) setReports(data);
@@ -126,7 +127,7 @@ export default function HistoryPage() {
                           <span>View</span>
                         </Link>
                         <a
-                          href={r.ppt_download_url}
+                          href={apiUrl(r.ppt_download_url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"

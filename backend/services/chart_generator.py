@@ -151,30 +151,33 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
     plt.close()
 
     # ── Chart 2: Horizontal Bar — Total Open by Zone ──────────────────────────
-    totals      = [r["total_open"] for r in table_rows]
-    sorted_data = sorted(zip(zones, totals), key=lambda t: t[1])
+    totals      = [r.get("total_open", 0) for r in table_rows]
+    sorted_data = sorted(zip(zones, totals), key=lambda t: t[1]) if zones and totals else []
     s_zones, s_totals = zip(*sorted_data) if sorted_data else ([], [])
 
-    fig2, ax2 = plt.subplots(figsize=(9, max(4.5, len(zones) * 0.55)), dpi=300)
+    fig2, ax2 = plt.subplots(figsize=(max(9, len(zones) * 0.55), max(4.5, len(zones) * 0.55)), dpi=300)
     _apply_style(ax2, fig2)
 
     # Color bars by value rank (darkest = highest)
     bar_colors = [PALETTE[0]] * len(s_zones)
-    bar_colors[-1] = RED  # Highest zone highlighted red
+    if len(bar_colors) > 0:
+        bar_colors[-1] = RED  # Highest zone highlighted red
 
-    bars = ax2.barh(list(s_zones), list(s_totals), color=bar_colors,
-                    height=0.55, zorder=3, edgecolor="white", linewidth=0.5)
+    if s_zones and s_totals:
+        bars = ax2.barh(list(s_zones), list(s_totals), color=bar_colors,
+                        height=0.55, zorder=3, edgecolor="white", linewidth=0.5)
 
-    for bar, val in zip(bars, s_totals):
-        if val > 0:
-            txt = ax2.text(
-                bar.get_width() + max(s_totals) * 0.01,
-                bar.get_y() + bar.get_height() / 2,
-                f"{int(val)}",
-                va="center", ha="left",
-                fontsize=9, fontweight="bold", color=LABEL_COLOR
-            )
-            txt.set_path_effects([pe.withStroke(linewidth=2, foreground="white")])
+        max_val = max(s_totals) if s_totals else 1
+        for bar, val in zip(bars, s_totals):
+            if val > 0:
+                txt = ax2.text(
+                    bar.get_width() + max(max_val * 0.01, 0.1),
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{int(val)}",
+                    va="center", ha="left",
+                    fontsize=9, fontweight="bold", color=LABEL_COLOR
+                )
+                txt.set_path_effects([pe.withStroke(linewidth=2, foreground="white")])
 
     ax2.set_xlabel("Total Open Complaints", fontsize=10, fontweight="bold", color="#334155")
     ax2.set_title("Total Open Drainage Complaints Volume by Zone",

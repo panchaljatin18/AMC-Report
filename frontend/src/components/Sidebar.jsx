@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import { apiUrl } from "../utils/api";
 
 export default function Sidebar({
   mobileOpen = false,
@@ -30,14 +31,14 @@ export default function Sidebar({
 
   const handleDownloadSamples = async () => {
     try {
-      const res = await fetch("/api/reports/generate-sample-files", {
+      const res = await fetch(apiUrl("/api/reports/generate-sample-files"), {
         method: "POST",
       });
       const data = await res.json();
       if (data.files) {
-        window.open(data.files.road, "_blank");
-        window.open(data.files.drainage, "_blank");
-        window.open(data.files.water, "_blank");
+        window.open(apiUrl(data.files.road), "_blank");
+        window.open(apiUrl(data.files.drainage), "_blank");
+        window.open(apiUrl(data.files.water), "_blank");
       }
     } catch (err) {
       alert("Please make sure the backend server (FastAPI port 8000) is running!");

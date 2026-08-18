@@ -20,17 +20,30 @@ def _safe_int_or_float(val: float):
 def _read_sheet_rows_fast(file_path: str, target_sheet_candidates: List[str]):
     wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
     target_sheet_name = None
+
+    # 1. Exact match (case-insensitive)
     for s in wb.sheetnames:
         if s.strip().lower() in [c.lower() for c in target_sheet_candidates]:
             target_sheet_name = s
             break
+
+    # 2. Substring match (e.g. 'Road Complaints' or '11-08-2026 Drainage')
+    if not target_sheet_name:
+        for s in wb.sheetnames:
+            s_clean = s.strip().lower()
+            if any(c.lower() in s_clean for c in target_sheet_candidates):
+                target_sheet_name = s
+                break
+
+    # 3. Fallback to first sheet
     if not target_sheet_name:
         target_sheet_name = wb.sheetnames[0]
 
     sheet = wb[target_sheet_name]
     all_rows = []
     for row in sheet.iter_rows(values_only=True):
-        all_rows.append(list(row))
+        if row and any(x is not None for x in row):
+            all_rows.append(list(row))
     wb.close()
     return all_rows
 

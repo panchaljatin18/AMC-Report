@@ -7,6 +7,7 @@ import DrainageSection from "../sections/DrainageSection";
 import WaterSection from "../sections/WaterSection";
 import ValidationAlert from "../components/ValidationAlert";
 import { Download, FileText, CheckCircle2, Layers } from "lucide-react";
+import { apiUrl } from "../utils/api";
 
 export default function Home() {
   const [reportData, setReportData] = useState(null);
@@ -16,11 +17,25 @@ export default function Home() {
   const handleReportGenerated = (data) => {
     setReportData(data);
     setActiveTab("road");
+
+    if (data && data.ppt_download_url) {
+      try {
+        const fullUrl = apiUrl(data.ppt_download_url);
+        const link = document.createElement("a");
+        link.href = fullUrl;
+        link.download = `CCRS_Report_${data.report_id || "generated"}.pptx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        console.error("Auto-download error:", e);
+      }
+    }
   };
 
   const handleDownloadPPT = () => {
     if (reportData && reportData.ppt_download_url) {
-      window.open(reportData.ppt_download_url, "_blank");
+      window.open(apiUrl(reportData.ppt_download_url), "_blank");
     }
   };
 

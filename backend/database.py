@@ -19,9 +19,14 @@ class ReportsDatabase:
         self.use_mongo = False
         self.client = None
         self.db = None
-        if MONGO_AVAILABLE:
+        if MONGO_AVAILABLE and MONGODB_URL:
             try:
-                self.client = AsyncIOMotorClient(MONGODB_URL, serverSelectionTimeoutMS=1000)
+                self.client = AsyncIOMotorClient(
+                    MONGODB_URL,
+                    serverSelectionTimeoutMS=2500,
+                    connectTimeoutMS=2500,
+                    socketTimeoutMS=2500
+                )
                 self.db = self.client[DATABASE_NAME]
                 self.use_mongo = True
             except Exception:

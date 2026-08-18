@@ -7,6 +7,7 @@ import WaterSection from "../../../sections/WaterSection";
 import ValidationAlert from "../../../components/ValidationAlert";
 import { Download, ArrowLeft, Layers } from "lucide-react";
 import Link from "next/link";
+import { apiUrl } from "../../../utils/api";
 
 export default function ReportDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -20,7 +21,7 @@ export default function ReportDetailPage({ params }) {
   useEffect(() => {
     async function fetchDetail() {
       try {
-        const res = await fetch(`/api/reports/${reportId}`);
+        const res = await fetch(apiUrl(`/api/reports/${reportId}`));
         if (!res.ok) throw new Error("Report not found");
         const data = await res.json();
         setReportData(data);
@@ -75,7 +76,7 @@ export default function ReportDetailPage({ params }) {
         </div>
 
         <a
-          href={reportData.ppt_download_url}
+          href={apiUrl(reportData.ppt_download_url)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all"
