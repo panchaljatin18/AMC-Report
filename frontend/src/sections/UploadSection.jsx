@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import DragDropUpload from "../components/DragDropUpload";
 import ValidationAlert from "../components/ValidationAlert";
-import { Play, Download, Sparkles, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Layers, BarChart3, Presentation, Check } from "lucide-react";
+import { Play, Download, Calendar, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, Layers, BarChart3, Presentation, Check } from "lucide-react";
 import { apiUrl, getApiBaseUrl, getApiHeaders } from "../utils/api";
 
 export default function UploadSection({ onReportGenerated, isProcessing, setIsProcessing }) {
@@ -141,7 +141,6 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600 shrink-0" />
               <span>Upload Source Complaint Datasets</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
