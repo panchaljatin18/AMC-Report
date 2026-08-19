@@ -43,21 +43,18 @@ def _apply_style(ax, fig):
 
 
 def _bar_label(ax, rects, fontsize=9):
-    """Draw bold data labels on bars with white outline for legibility."""
+    """Draw bold data labels on bars cleanly without expensive path stroke calculations."""
     for rect in rects:
         height = rect.get_height()
         if height > 0:
-            txt = ax.annotate(
+            ax.annotate(
                 f"{int(height)}",
                 xy=(rect.get_x() + rect.get_width() / 2, height),
-                xytext=(0, 4),
+                xytext=(0, 3),
                 textcoords="offset points",
                 ha="center", va="bottom",
                 fontsize=fontsize, fontweight="bold", color=LABEL_COLOR,
             )
-            txt.set_path_effects([
-                pe.withStroke(linewidth=2.5, foreground="white")
-            ])
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -66,12 +63,11 @@ def _bar_label(ax, rects, fontsize=9):
 def generate_road_chart(road_stats: Dict[str, Any], output_path: str) -> str:
     """
     Grouped bar chart per zone — Closed (navy) | Open (red) | Grand Total (amber).
-    Ultra-HD 300 DPI.
+    Optimized fast HD 100 DPI.
     """
     zones      = [z["zone"] for z in road_stats["zones"]]
     categories = road_stats["categories"]
 
-    # Build value arrays
     closed_vals = [z["subtotal_closed"] for z in road_stats["zones"]]
     open_vals   = [z["subtotal_open"]   for z in road_stats["zones"]]
     gt_vals     = [z["subtotal_grand_total"] for z in road_stats["zones"]]
@@ -80,7 +76,7 @@ def generate_road_chart(road_stats: Dict[str, Any], output_path: str) -> str:
     width = 0.24
     n_z   = len(zones)
 
-    fig, ax = plt.subplots(figsize=(max(10, n_z * 1.4), 5.5), dpi=140)
+    fig, ax = plt.subplots(figsize=(max(10, n_z * 1.4), 5.5), dpi=100)
     _apply_style(ax, fig)
 
     r1 = ax.bar(x - width,     closed_vals, width, label="Closed",      color=NAVY,  zorder=3, edgecolor="white", linewidth=0.5)
@@ -104,7 +100,7 @@ def generate_road_chart(road_stats: Dict[str, Any], output_path: str) -> str:
     )
 
     plt.tight_layout(pad=1.5)
-    plt.savefig(output_path, bbox_inches="tight", dpi=140)
+    plt.savefig(output_path, bbox_inches="tight", dpi=100)
     plt.close(fig)
     return output_path
 
@@ -126,7 +122,7 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
     x      = np.arange(len(zones))
     width  = min(0.8 / n_cats, 0.18)
 
-    fig1, ax1 = plt.subplots(figsize=(max(10, len(zones) * 1.5), 5.5), dpi=140)
+    fig1, ax1 = plt.subplots(figsize=(max(10, len(zones) * 1.5), 5.5), dpi=100)
     _apply_style(ax1, fig1)
 
     for i, cat in enumerate(categories):
@@ -147,7 +143,7 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
 
     plt.tight_layout(pad=1.5)
     chart1_path = os.path.join(output_dir, "drainage_cat_breakdown.png")
-    plt.savefig(chart1_path, bbox_inches="tight", dpi=140)
+    plt.savefig(chart1_path, bbox_inches="tight", dpi=100)
     plt.close(fig1)
 
     # ── Chart 2: Horizontal Bar — Total Open by Zone ──────────────────────────
@@ -155,10 +151,9 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
     sorted_data = sorted(zip(zones, totals), key=lambda t: t[1]) if zones and totals else []
     s_zones, s_totals = zip(*sorted_data) if sorted_data else ([], [])
 
-    fig2, ax2 = plt.subplots(figsize=(max(9, len(zones) * 0.55), max(4.5, len(zones) * 0.55)), dpi=140)
+    fig2, ax2 = plt.subplots(figsize=(max(9, len(zones) * 0.55), max(4.5, len(zones) * 0.55)), dpi=100)
     _apply_style(ax2, fig2)
 
-    # Color bars by value rank (darkest = highest)
     bar_colors = [PALETTE[0]] * len(s_zones)
     if len(bar_colors) > 0:
         bar_colors[-1] = RED  # Highest zone highlighted red
@@ -170,14 +165,13 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
         max_val = max(s_totals) if s_totals else 1
         for bar, val in zip(bars, s_totals):
             if val > 0:
-                txt = ax2.text(
+                ax2.text(
                     bar.get_width() + max(max_val * 0.01, 0.1),
                     bar.get_y() + bar.get_height() / 2,
                     f"{int(val)}",
                     va="center", ha="left",
                     fontsize=9, fontweight="bold", color=LABEL_COLOR
                 )
-                txt.set_path_effects([pe.withStroke(linewidth=2, foreground="white")])
 
     ax2.set_xlabel("Total Open Complaints", fontsize=10, fontweight="bold", color="#334155")
     ax2.set_title("Total Open Drainage Complaints Volume by Zone",
@@ -189,7 +183,7 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
 
     plt.tight_layout(pad=1.5)
     chart2_path = os.path.join(output_dir, "drainage_total_volume.png")
-    plt.savefig(chart2_path, bbox_inches="tight", dpi=140)
+    plt.savefig(chart2_path, bbox_inches="tight", dpi=100)
     plt.close(fig2)
 
     return {"cat_breakdown": chart1_path, "total_volume": chart2_path}
@@ -201,7 +195,7 @@ def generate_drainage_charts(drainage_stats: Dict[str, Any], output_dir: str) ->
 def generate_water_chart(water_stats: Dict[str, Any], output_path: str) -> str:
     """
     Grouped bar chart — Open Complaints by Zone & Category (multi-color bars).
-    Crisp HD 140 DPI.
+    Optimized HD 100 DPI.
     """
     zone_rows  = water_stats["zone_rows"]
     zones      = [z["zone"] for z in zone_rows]
@@ -211,7 +205,7 @@ def generate_water_chart(water_stats: Dict[str, Any], output_path: str) -> str:
     x      = np.arange(len(zones))
     width  = min(0.8 / n_cats, 0.15)
 
-    fig, ax = plt.subplots(figsize=(max(11, len(zones) * 1.6), 5.5), dpi=140)
+    fig, ax = plt.subplots(figsize=(max(11, len(zones) * 1.6), 5.5), dpi=100)
     _apply_style(ax, fig)
 
     for i, cat in enumerate(categories):
@@ -231,6 +225,7 @@ def generate_water_chart(water_stats: Dict[str, Any], output_path: str) -> str:
               fontsize=7.5, loc="upper right", framealpha=0.95, ncol=2)
 
     plt.tight_layout(pad=1.5)
-    plt.savefig(output_path, bbox_inches="tight", dpi=140)
+    plt.savefig(output_path, bbox_inches="tight", dpi=100)
     plt.close(fig)
     return output_path
+

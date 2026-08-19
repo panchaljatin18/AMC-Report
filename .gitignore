@@ -16,6 +16,7 @@ venv/
 env/
 ENV/
 
+
 # ─── Environment / Secrets ────────────────────────────────────────────────────
 .env
 .env.local
@@ -29,6 +30,7 @@ backend/generated_reports/
 backend/reports_db.json
 backend/users_db.json
 scratch/
+test_tmp/
 
 # ─── Node / Next.js ───────────────────────────────────────────────────────────
 node_modules/

@@ -7,7 +7,7 @@ import WaterSection from "../../../sections/WaterSection";
 import ValidationAlert from "../../../components/ValidationAlert";
 import { Download, ArrowLeft, Layers } from "lucide-react";
 import Link from "next/link";
-import { apiUrl, getApiHeaders } from "../../../utils/api";
+import { apiUrl, getApiHeaders, downloadFile } from "../../../utils/api";
 
 export default function ReportDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -17,6 +17,7 @@ export default function ReportDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("road");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     async function fetchDetail() {
@@ -33,6 +34,18 @@ export default function ReportDetailPage({ params }) {
     }
     fetchDetail();
   }, [reportId]);
+
+  const handleDownload = async () => {
+    if (!reportData?.ppt_download_url) return;
+    setDownloading(true);
+    try {
+      await downloadFile(reportData.ppt_download_url, `CCRS_Complaints_Report_${reportId.substring(0, 8)}.pptx`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -75,15 +88,14 @@ export default function ReportDetailPage({ params }) {
           </div>
         </div>
 
-        <a
-          href={apiUrl(reportData.ppt_download_url)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all"
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
         >
           <Download className="w-4 h-4" />
-          <span>Download PPT (.pptx)</span>
-        </a>
+          <span>{downloading ? "Downloading PPT..." : "Download PPT (.pptx)"}</span>
+        </button>
       </div>
 
       {/* Validation Alert */}

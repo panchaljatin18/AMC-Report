@@ -12,27 +12,59 @@ try:
 except ImportError:
     from config import API_SECRET_KEY, MAX_UPLOAD_SIZE_BYTES
 
+try:
+    from backend.services.auth import verify_session_token
+except ImportError:
+    from services.auth import verify_session_token
+
 logger = logging.getLogger("security")
 
 # 1. API Key Authentication
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-async def verify_api_key(api_key: str = Security(api_key_header)):
+async def verify_api_key(request: Request, api_key: str = Security(api_key_header)):
     """
-    Enforce API Key verification if API_SECRET_KEY is configured in backend environment.
+    Enforce API Key / Session authentication if API_SECRET_KEY is configured in backend environment.
+    Supports:
+    1. X-API-Key header
+    2. ?api_key=... or ?token=... query parameter (for direct browser file downloads)
+    3. Authorization: Bearer <session_token> or X-Auth-Token header
     If API_SECRET_KEY is empty/not set (e.g. initial local dev), allows access.
     """
     expected_key = (API_SECRET_KEY or "").strip()
     if not expected_key:
         return True
 
-    if not api_key or api_key.strip() != expected_key:
-        logger.warning("Unauthorized API access attempt with invalid/missing API key.")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API authentication credentials."
-        )
-    return True
+    # 1. Check X-API-Key header
+    if api_key and api_key.strip() == expected_key:
+        return True
+
+    # 2. Check query parameters (for direct link / window.open downloads)
+    query_key = request.query_params.get("api_key", "").strip() or request.query_params.get("token", "").strip()
+    if query_key and query_key == expected_key:
+        return True
+
+    # 3. Check Session Token in Authorization / X-Auth-Token headers or query param
+    auth_header = request.headers.get("Authorization", "").strip()
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    elif "X-Auth-Token" in request.headers:
+        token = request.headers["X-Auth-Token"].strip()
+    elif query_key:
+        token = query_key
+
+    if token:
+        user = verify_session_token(token)
+        if user:
+            return True
+
+    logger.warning("Unauthorized API access attempt with invalid/missing API key.")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing API authentication credentials."
+    )
+
 
 
 # 2. Path Traversal Protection

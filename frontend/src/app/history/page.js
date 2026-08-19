@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { History, Download, Calendar, FileText, AlertTriangle, Eye, RefreshCw } from "lucide-react";
-import { apiUrl, getApiHeaders } from "../../utils/api";
+import { apiUrl, getApiHeaders, downloadFile } from "../../utils/api";
 
 export default function HistoryPage() {
   const [reports, setReports] = useState([]);
@@ -126,15 +126,13 @@ export default function HistoryPage() {
                           <Eye className="w-3.5 h-3.5 text-blue-600" />
                           <span>View</span>
                         </Link>
-                        <a
-                          href={apiUrl(r.ppt_download_url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"
+                        <button
+                          onClick={() => downloadFile(r.ppt_download_url, `CCRS_Complaints_Report_${r.id.substring(0, 8)}.pptx`)}
+                          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>PPT</span>
-                        </a>
+                        </button>
                       </div>
                     </td>
                   </tr>

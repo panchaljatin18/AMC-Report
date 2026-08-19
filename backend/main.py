@@ -196,6 +196,26 @@ def download_sample_file(filename: str, request: Request):
     )
 
 
+def _generate_all_charts_parallel(road_stats, drainage_stats, water_stats, chart_dir):
+    from concurrent.futures import ThreadPoolExecutor
+    chart_dir.mkdir(parents=True, exist_ok=True)
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        f_road = executor.submit(generate_road_chart, road_stats, str(chart_dir / "road_chart.png"))
+        f_drainage = executor.submit(generate_drainage_charts, drainage_stats, str(chart_dir))
+        f_water = executor.submit(generate_water_chart, water_stats, str(chart_dir / "water_chart.png"))
+        
+        road_chart_path = f_road.result()
+        drainage_charts = f_drainage.result()
+        water_chart_path = f_water.result()
+
+    return {
+        "road_chart": road_chart_path,
+        "drainage_cat": drainage_charts["cat_breakdown"],
+        "drainage_total": drainage_charts["total_volume"],
+        "water_chart": water_chart_path
+    }
+
+
 def _process_pipeline(road_path, drainage_path, water_path, date_range, session_id, session_upload_dir):
     # 1. Parse Excel Files
     raw_road = parse_road_excel(str(road_path))
@@ -214,20 +234,9 @@ def _process_pipeline(road_path, drainage_path, water_path, date_range, session_
     drainage_stats = compute_drainage_stats(v_drainage["rows"])
     water_stats = compute_water_stats(v_water["rows"])
 
-    # 4. Generate Matplotlib Charts (Fast 140 DPI)
+    # 4. Generate Matplotlib Charts in Parallel
     chart_dir = session_upload_dir / "charts"
-    chart_dir.mkdir(parents=True, exist_ok=True)
-
-    road_chart_path = generate_road_chart(road_stats, str(chart_dir / "road_chart.png"))
-    drainage_charts = generate_drainage_charts(drainage_stats, str(chart_dir))
-    water_chart_path = generate_water_chart(water_stats, str(chart_dir / "water_chart.png"))
-
-    chart_paths = {
-        "road_chart": road_chart_path,
-        "drainage_cat": drainage_charts["cat_breakdown"],
-        "drainage_total": drainage_charts["total_volume"],
-        "water_chart": water_chart_path
-    }
+    chart_paths = _generate_all_charts_parallel(road_stats, drainage_stats, water_stats, chart_dir)
 
     # 5. Build PPT Presentation
     ppt_filename = f"CCRS_CRM_Report_{session_id}.pptx"
@@ -423,16 +432,7 @@ async def download_report_ppt(report_id: str, request: Request):
             drainage_stats = report.get("drainage_stats", {})
             water_stats = report.get("water_stats", {})
 
-            road_chart_path = generate_road_chart(road_stats, str(chart_dir / "road_chart.png"))
-            drainage_charts = generate_drainage_charts(drainage_stats, str(chart_dir))
-            water_chart_path = generate_water_chart(water_stats, str(chart_dir / "water_chart.png"))
-
-            chart_paths = {
-                "road_chart": road_chart_path,
-                "drainage_cat": drainage_charts["cat_breakdown"],
-                "drainage_total": drainage_charts["total_volume"],
-                "water_chart": water_chart_path
-            }
+            chart_paths = _generate_all_charts_parallel(road_stats, drainage_stats, water_stats, chart_dir)
 
             logo_file = Path(__file__).resolve().parent.parent / "frontend" / "public" / "AMC Logo.webp"
             logo_str = str(logo_file) if logo_file.exists() else None
