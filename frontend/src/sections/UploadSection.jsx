@@ -34,10 +34,12 @@ export default function UploadSection({ onReportGenerated, isProcessing, setIsPr
       }
       const data = await res.json();
       
-      // Fetch each sample file and convert to File object
-      const roadBlob = await fetch(apiUrl(data.files.road), { headers: getApiHeaders() }).then((r) => r.blob());
-      const drainageBlob = await fetch(apiUrl(data.files.drainage), { headers: getApiHeaders() }).then((r) => r.blob());
-      const waterBlob = await fetch(apiUrl(data.files.water), { headers: getApiHeaders() }).then((r) => r.blob());
+      // Fetch all 3 sample files in parallel for maximum speed
+      const [roadBlob, drainageBlob, waterBlob] = await Promise.all([
+        fetch(apiUrl(data.files.road), { headers: getApiHeaders() }).then((r) => r.blob()),
+        fetch(apiUrl(data.files.drainage), { headers: getApiHeaders() }).then((r) => r.blob()),
+        fetch(apiUrl(data.files.water), { headers: getApiHeaders() }).then((r) => r.blob()),
+      ]);
 
       const roadFile = new File([roadBlob], "Road_Complaints_Sample.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const drainageFile = new File([drainageBlob], "Drainage_Complaints_Sample.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });

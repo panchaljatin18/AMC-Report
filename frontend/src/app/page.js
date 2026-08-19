@@ -7,7 +7,7 @@ import DrainageSection from "../sections/DrainageSection";
 import WaterSection from "../sections/WaterSection";
 import ValidationAlert from "../components/ValidationAlert";
 import { Download, FileText, CheckCircle2, Layers } from "lucide-react";
-import { apiUrl } from "../utils/api";
+import { apiUrl, downloadFile } from "../utils/api";
 
 export default function Home() {
   const [reportData, setReportData] = useState(null);
@@ -21,7 +21,10 @@ export default function Home() {
 
   const handleDownloadPPT = () => {
     if (reportData && reportData.ppt_download_url) {
-      window.open(apiUrl(reportData.ppt_download_url), "_blank");
+      downloadFile(
+        reportData.ppt_download_url,
+        `CCRS_Complaints_Report_${(reportData.report_id || "download").substring(0, 8)}.pptx`
+      );
     }
   };
 

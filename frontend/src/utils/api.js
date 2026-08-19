@@ -16,6 +16,18 @@ export function apiUrl(path) {
   return `${base}${cleanPath}`;
 }
 
+export function getStoredToken() {
+  if (typeof window === "undefined") return null;
+  return (
+    sessionStorage.getItem("amc_ccrs_session_token") ||
+    localStorage.getItem("amc_ccrs_session_token") ||
+    sessionStorage.getItem("token") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("amc_ccrs_auth_token") ||
+    localStorage.getItem("amc_ccrs_auth_token")
+  );
+}
+
 export function getApiHeaders(customHeaders = {}) {
   const headers = { ...customHeaders };
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -23,7 +35,7 @@ export function getApiHeaders(customHeaders = {}) {
     headers["X-API-Key"] = apiKey.trim();
   }
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -35,13 +47,19 @@ export async function downloadFile(path, defaultFilename = "download.pptx") {
   const url = apiUrl(path);
   let finalUrl = url;
   
-  // Attach token or api_key as query param for fallback
+  // Attach token or api_key as query param for fallback / direct browser access
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    const paramKey = apiKey ? `api_key=${encodeURIComponent(apiKey)}` : (token ? `token=${encodeURIComponent(token)}` : "");
-    if (paramKey) {
-      finalUrl += (finalUrl.includes("?") ? "&" : "?") + paramKey;
+    const queryParams = [];
+    if (apiKey) {
+      queryParams.push(`api_key=${encodeURIComponent(apiKey)}`);
+    }
+    if (token) {
+      queryParams.push(`token=${encodeURIComponent(token)}`);
+    }
+    if (queryParams.length > 0) {
+      finalUrl += (finalUrl.includes("?") ? "&" : "?") + queryParams.join("&");
     }
   }
 

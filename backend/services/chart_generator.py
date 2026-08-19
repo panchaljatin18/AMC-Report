@@ -1,6 +1,10 @@
 import os
 import matplotlib
 matplotlib.use("Agg")  # Non-gui backend
+matplotlib.rcParams['path.simplify'] = True
+matplotlib.rcParams['path.simplify_threshold'] = 1.0
+matplotlib.rcParams['agg.path.chunksize'] = 10000
+matplotlib.rcParams['figure.max_open_warning'] = 0
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as pe

@@ -14,7 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { apiUrl } from "../utils/api";
+import { apiUrl, getApiHeaders, downloadFile } from "../utils/api";
 
 export default function Sidebar({
   mobileOpen = false,
@@ -33,12 +33,13 @@ export default function Sidebar({
     try {
       const res = await fetch(apiUrl("/api/reports/generate-sample-files"), {
         method: "POST",
+        headers: getApiHeaders(),
       });
       const data = await res.json();
       if (data.files) {
-        window.open(apiUrl(data.files.road), "_blank");
-        window.open(apiUrl(data.files.drainage), "_blank");
-        window.open(apiUrl(data.files.water), "_blank");
+        await downloadFile(data.files.road, "Road_Complaints_Sample.xlsx");
+        await downloadFile(data.files.drainage, "Drainage_Complaints_Sample.xlsx");
+        await downloadFile(data.files.water, "Water_Complaints_Sample.xlsx");
       }
     } catch (err) {
       alert("Unable to generate samples. Please check if backend server is reachable.");

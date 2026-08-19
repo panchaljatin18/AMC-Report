@@ -216,23 +216,26 @@ def _generate_all_charts_parallel(road_stats, drainage_stats, water_stats, chart
     }
 
 
+def _process_single_dataset(parse_fn, validate_fn, compute_fn, file_path):
+    raw = parse_fn(str(file_path))
+    validated = validate_fn(raw)
+    stats = compute_fn(validated["rows"])
+    return stats, validated["warnings"]
+
+
 def _process_pipeline(road_path, drainage_path, water_path, date_range, session_id, session_upload_dir):
-    # 1. Parse Excel Files
-    raw_road = parse_road_excel(str(road_path))
-    raw_drainage = parse_drainage_excel(str(drainage_path))
-    raw_water = parse_water_excel(str(water_path))
+    # 1-3. Parse Excel Files, Validate Row Math & Compute Stats in parallel
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        f_road = executor.submit(_process_single_dataset, parse_road_excel, validate_road_data, compute_road_stats, road_path)
+        f_drainage = executor.submit(_process_single_dataset, parse_drainage_excel, validate_drainage_data, compute_drainage_stats, drainage_path)
+        f_water = executor.submit(_process_single_dataset, parse_water_excel, validate_water_data, compute_water_stats, water_path)
 
-    # 2. Validate Row Math
-    v_road = validate_road_data(raw_road)
-    v_drainage = validate_drainage_data(raw_drainage)
-    v_water = validate_water_data(raw_water)
+        road_stats, road_warnings = f_road.result()
+        drainage_stats, drainage_warnings = f_drainage.result()
+        water_stats, water_warnings = f_water.result()
 
-    all_warnings = v_road["warnings"] + v_drainage["warnings"] + v_water["warnings"]
-
-    # 3. Compute Stats
-    road_stats = compute_road_stats(v_road["rows"])
-    drainage_stats = compute_drainage_stats(v_drainage["rows"])
-    water_stats = compute_water_stats(v_water["rows"])
+    all_warnings = road_warnings + drainage_warnings + water_warnings
 
     # 4. Generate Matplotlib Charts in Parallel
     chart_dir = session_upload_dir / "charts"
